@@ -30,7 +30,10 @@ class StorageMonitor(object):
         while True:  # TODO Replace with kill event
             for process in self.processes:
                 command = ['ps', '-p', str(process.pid), '-o', 'pcpu,pmem,etimes']
-                response = subprocess.check_output(command).split(b'\n')
+                try:
+                    response = subprocess.check_output(command).split(b'\n')
+                except CalledProcessError:
+                    break # TODO 
                 
                 # Check the first line of the response for 'CPU' and 'MEM'
                 # to ensure that ps returned valid output
