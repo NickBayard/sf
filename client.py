@@ -2,11 +2,12 @@
 
 '''Enter module docstring here'''
 
-import pdb
+from __future__ import print_function
 import sys
+import os
 import os.path
 import argparse
-from multiprocessing import Process
+import multiprocessing
 
 try:
     import yaml
@@ -15,23 +16,76 @@ except ImportError:
 
 from client_config import ClientConfig
 from storage_consumer import StorageConsumer
+from storage_monitor import StorageMonitor
 
-def storage_factory(config, id):
-    storage = StorageConsumer(id, config.chunk_size)
+def storage_factory(chunk_size, file_size):
+    storage = StorageConsumer(chunk_size, file_size)
     storage.run()
 
+def monitor_factory(processes):
+    monitor = StorageMonitor(processes)
+    monitor.run()
+
 def main(config):
+    print('main pid {}'.format(os.getpid()))
     processes = []
     for id in range(config.storage_count):
-        p = Process(target=storage_factory, args=(config,id))
+        process_name = 'Storage_Consumer_{}'.format(id) 
+
+        p = multiprocessing.Process(target=storage_factory, 
+                                    name=process_name,
+                                    args=(config.chunk_sizes[id], 
+                                          config.file_sizes[id]))
+
         processes.append(p)
         p.start()
+    
+    monitor = multiprocessing.Process(target=monitor_factory,
+                                      name='Monitor',
+                                      args=(processes,))
+    monitor.start()
+
+    # FIXME
+    monitor.join()
+    for proc in processes:
+        proc.join()
+
+
 
 def update_config(config, args):
-    pass
+    config.storage_count = args.storage_count if args.storage_count is not None \
+        else config.storage_count
+
+    config.default_chunk_size = args.default_chunk_size if \
+        args.default_chunk_size is not None  else config.default_chunk_size
+
+    config.default_file_size = args.default_file_size if \
+        args.default_file_size is not None  else config.default_file_size
+
+    # Chunk sizes for each storage consumer are individually configurable.
+    if len(config.chunk_sizes) > config.storage_count:
+        # There were extra chunk sizes specified. 
+        config.chunk_sizes = config.chunk_sizes[:config.storage_count]
+    elif len(config.chunk_sizes) < config.storage_count:
+        # Not enough chunk sizes.  Backfill with default
+        config.chunk_sizes.extend([config.default_chunk_size] * 
+            (config.storage_count - len(config.chunk_sizes)))
+
+    # File sizes for each storage consumer are individually configurable.
+    if len(config.file_sizes) > config.storage_count:
+        # There were extra file sizes specified. 
+        config.file_sizes = config.file_sizes[:config.storage_count]
+    elif len(config.file_sizes) < config.storage_count:
+        # Not enough file sizes.  Backfill with default
+        config.file_sizes.extend([config.default_file_size] * 
+            (config.storage_count - len(config.file_sizes)))
+
+    # TODO One more of ^these guys^ and we need to refactor
+
+    config.runtime = args.runtime if args.runtime is not None \
+        else config.runtime
 
 def get_config(args):
-    pdb.set_trace()
     if not os.path.exists(args.config_path) or \
         not os.path.isfile(args.config_path):
         #TODO Send failure to server
@@ -48,23 +102,29 @@ def get_config(args):
 def get_command_line_args():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-s', '--storage-processes', type=int,
-        dest='storage_count', default=1,
-        help='Number of worker processes to consume storage.')
-
     parser.add_argument('--config-file', dest='config_path',
         default='client_config.yaml',
         help='File path of yaml configuration file for client.')
 
-    parser.add_argument('--default-chunk-size', type=int,
-        dest='chunk_size', default=10,
-        help='Default chunk size in MB for storage consumers.')
+    parser.add_argument('-s', '--storage-processes', type=int,
+        dest='storage_count', 
+        help='Number of worker processes to consume storage.')
 
-    parser.add_argument('-t', '--runtime', type=int, default=600,
+    parser.add_argument('--default-chunk-size', type=int,
+        dest='default_chunk_size', 
+        help='''Chunk size in MB for storage consumers if sizes for all
+                consumers are not specificed in --config-file.''')
+
+    parser.add_argument('--default-file-size', type=int,
+        dest='default_file_size', 
+        help='''File size in MB for storage consumers if sizes for all
+                consumers are not specificed in --config-file.''')
+
+    parser.add_argument('-t', '--runtime', type=int, 
         help='Time (sec) that client should run for.')
 
     return parser.parse_args()
 
-if __name__ == 'main':
+if __name__ == '__main__':
     main(get_config(get_command_line_args()))
 
