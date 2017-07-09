@@ -6,28 +6,28 @@ import os.path
 import subprocess
 import multiprocessing
 
+from storage_object import StorageObject
 from process_containers import Message
 
-class StorageConsumer(multiprocessing.Process):
-    def __init__(self, id, chunk_size, file_size, heartbeat, report_queue, name=None):
-        super(StorageConsumer, self).__init__(name=name)
-        self.id = id
+class StorageConsumer(StorageObject):
+    def __init__(self, id, chunk_size, file_size, heartbeat, report, name=None):
+        super(StorageConsumer, self).__init__(id=id,
+                                              heartbeat=heartbeat,
+                                              report=report,
+                                              name=name)
         self.chunk_size = chunk_size * 1000000
         self.file_size = file_size * 1000000
-        self.heartbeat = heartbeat
-        self.report = report_queue
 
     def run(self):
         # Report that this consumer had started running
         self.report.put(Message(name='Consumer',
                                 id=self.id,
-                                data_time=datetime.now(),
+                                date_time=datetime.now(),
                                 type='START',
                                 payload=None))
 
-        #file_num = 0
-        #while True:  # TODO change to a kill event from master
-        for file_num in range(1):
+        file_num = 0
+        while self.check_heartbeat():
             filename = '{}_file_{}'.format(self.name, file_num)
 
             # Create the file first. We will need to close the file after each
@@ -43,16 +43,15 @@ class StorageConsumer(multiprocessing.Process):
             # Finished writing file, send rollover message
             self.report.put(Message(name='Consumer',
                                     id=self.id,
-                                    data_time=datetime.now(),
+                                    date_time=datetime.now(),
                                     type='ROLLOVER',
                                     payload=filename)
 
-            #file_num += 1
-            #break  # TODO Go away after kill event is added
+            file_num += 1
 
         # Report that this consumer had stopped running
         self.report.put(Message(name='Consumer',
                                 id=self.id,
-                                data_time=datetime.now(),
+                                date_time=datetime.now(),
                                 type='STOP',
                                 payload=None))

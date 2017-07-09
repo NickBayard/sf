@@ -47,7 +47,7 @@ def main(config):
                                                 chunk_size=config.chunk_sizes[id],
                                                 file_size=config.file_sizes[id],
                                                 heartbeat=slave,
-                                                report_queue=slave_queue,
+                                                report=slave_queue,
                                                 name=process_name),
                         pipe=master)
         consumers.append(consumer)
@@ -58,8 +58,9 @@ def main(config):
     master, slave = multiprocessing.Pipe()
 
     monitor = StorageMonitor(processes=[c.process for c in consumers],
+                             id=0,  # Only one monitor instance
                              heartbeat=slave,
-                             report_queue=slave_queue,
+                             report=slave_queue,
                              poll_period=config.monitor_poll_period,
                              name='Monitor')
     monitor.start()

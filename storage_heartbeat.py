@@ -79,11 +79,11 @@ class StorageHeartbeat(object):
                                  handler=_handle_heartbeat,
                                  error_handler=_handle_heartbeat_error)
 
-            # We can wait up to HEARTBEAT_RESPONSE_TIMEOUT seconds after sending the
-            # heartbeat request.  So we need to sleep some amount of time so that
-            # the next request goes out HEARTBEAT_POLL_INTERVAL seconds after the
-            # last one
-            time.sleep(self.HEARTBEAT_POLL_INTERVAL - (time.time() - poll_start_time))
+            # Subtract the elapsed time from the HEARTBEAT_POLL_INTERVAL for
+            # more accurate heartbeat intervals
+            sleep_time = self.HEARTBEAT_POLL_INTERVAL - (time.time() - poll_start_time)
+            if sleep_time > 0:
+                time.sleep(sleep_time)
 
     def _kill_all(self):
         # Runtime has ended. Send kill message to all child processes
