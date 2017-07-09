@@ -21,7 +21,7 @@ class StorageObject(multiprocessing.Process):
                 return False
 
             if message.type == 'HEARTBEAT':
-                self.heartbeat.send(Message(name='Monitor',
+                self.heartbeat.send(Message(name=self.name,
                                             id=0,
                                             date_time=datetime.now(),
                                             type='HEARTBEAT',

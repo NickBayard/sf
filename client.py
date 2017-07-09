@@ -73,10 +73,8 @@ def main(config):
 
     # FIXME
     monitor.join()
-    for proc in processes:
-        proc.join()
-
-
+    for consumer in consumers:
+        consumer.process.join()
 
 def update_config(config, args):
     config.storage_count = args.storage_count if args.storage_count is not None \

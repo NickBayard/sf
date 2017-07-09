@@ -35,6 +35,9 @@ class StorageHeartbeat(object):
         pass
 
     def _poll_processes(self, message, timeout, handler, error_handler):
+        self.monitor_pipe.send(message)
+        print('{} sent to monitor'.format(repr(message)))
+
         for consumer in self.consumers:  #HeartbeatData
             consumer.pipe.send(message)
             print('{} sent to consumer {}'.format(repr(message), consumer.process.id))
