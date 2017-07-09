@@ -11,7 +11,6 @@ import subprocess
 import re
 
 class StorageMonitor(multiprocessing.Process):
-    STORAGE_CONSUMER_POLL_PERIOD = 10
 
     class ProcessData(object):
         def __init__(self, process):
@@ -20,9 +19,12 @@ class StorageMonitor(multiprocessing.Process):
             self.name = process.name
 
 
-    def __init__(self, processes, name=None):
+    def __init__(self, processes, heartbeat, report_queue, poll_period, name=None):
         super(StorageMonitor, self).__init__(name=name)
         self.processes = [self.ProcessData(p) for p in processes]
+        self.heartbeat = heartbeat
+        self.report = report_queue
+        self.poll_period = poll_period
 
     def run(self):
         print('Monitor pid {}'.format(self.pid))
@@ -51,4 +53,4 @@ class StorageMonitor(multiprocessing.Process):
                                                                process.mem, 
                                                                process.etime))
 
-            time.sleep(self.STORAGE_CONSUMER_POLL_PERIOD)
+            time.sleep(self.poll_period)

@@ -9,10 +9,12 @@ import subprocess
 import multiprocessing
 
 class StorageConsumer(multiprocessing.Process):
-    def __init__(self, chunk_size, file_size, name=None):
+    def __init__(self, chunk_size, file_size, heartbeat, reportQ, name=None):
         super(StorageConsumer, self).__init__(name=name)
         self.chunk_size = chunk_size * 1000000
         self.file_size = file_size * 1000000
+        self.heartbeat = heartbeat
+        self.report = reportQ
 
     def run(self):
         print('{} pid {}'.format(self.name, self.pid))

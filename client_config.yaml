@@ -1,11 +1,12 @@
 --- !ClientConfig
 storage_count: 1
-default_chunk_size: 10
-default_file_size: 100
+default_chunk_size: 10  # MB
+default_file_size: 100  # MB
 # If the size of the chunk_sizes or file_sizes lists are less than the storage
 # count, then the default chunk size and default file size will backfill the
 # remaining storage consumers.  If the size is greater than the storage count,
 # then the list will be truncated.
-chunk_sizes: [10, 11, 12]  
-file_sizes: [100, 110, 120]
-runtime: 600
+chunk_sizes: [10, 11, 12]    # MB
+file_sizes: [100, 110, 120]  # MB
+monitor_poll_period: 10  # Seconds
+runtime: 600  # Seconds

@@ -3,6 +3,10 @@
 '''Enter module docstring here'''
 
 from __future__ import print_function
+
+__version__ = '1.3.3.7'
+__author__ = 'Nick Bayard'
+
 import sys
 import os
 import os.path
@@ -18,20 +22,40 @@ from client_config import ClientConfig
 from storage_consumer import StorageConsumer
 from storage_monitor import StorageMonitor
 
+class ProcessInfo(object):
+    def __init__(self, process, pipe):
+        self.process = process
+        self.pipe = pipe
+
 def main(config):
     print('main pid {}'.format(os.getpid()))
+
+    slave_queue = multiprocessing.Queue()
     consumers = []
+
     for id in xrange(config.storage_count):
         process_name = 'Storage_Consumer_{}'.format(id) 
-
-        consumer = StorageConsumer(chunk_size=config.chunk_sizes[id],
-                            file_size=config.file_sizes[id],
-                            name=process_name)
+        master, slave = multiprocessing.Pipe()
+        consumer = ProcessInfo(process=StorageConsumer(chunk_size=config.chunk_sizes[id],
+                                                       file_size=config.file_sizes[id],
+                                                       heartbeat=slave,
+                                                       report_queue=slave_queue,
+                                                       name=process_name),
+                               pipe=master)
         consumers.append(consumer)
-        consumer.start()
+        consumer.process.start()
     
-    monitor = StorageMonitor(processes=consumers, name='Monitor')
+    master, slave = multiprocessing.Pipe()
+    monitor = StorageMonitor(processes=[c.process for c in consumers], 
+                             heartbeat=slave,
+                             report_queue=slave_queue,
+                             poll_period=config.monitor_poll_period,
+                             name='Monitor')
     monitor.start()
+    heartbeat = StorageHeartbeat(consumers=consumers,
+                                 monitor_pipe=master,
+                                 report_in=slave_queue)
+    heartbeat.run()
 
     # FIXME
     monitor.join()
@@ -95,21 +119,24 @@ def get_command_line_args():
         help='File path of yaml configuration file for client.')
 
     parser.add_argument('-s', '--storage-processes', type=int,
-        dest='storage_count', 
+        dest='storage_count', metavar='COUNT',
         help='Number of worker processes to consume storage.')
 
     parser.add_argument('--default-chunk-size', type=int,
-        dest='default_chunk_size', 
+        dest='default_chunk_size', metavar='SIZE_MB',
         help='''Chunk size in MB for storage consumers if sizes for all
                 consumers are not specificed in --config-file.''')
 
     parser.add_argument('--default-file-size', type=int,
-        dest='default_file_size', 
+        dest='default_file_size', metavar='SIZE_MB',
         help='''File size in MB for storage consumers if sizes for all
                 consumers are not specificed in --config-file.''')
 
-    parser.add_argument('-t', '--runtime', type=int, 
+    parser.add_argument('-t', '--runtime', metavar= 'SECS', type=int, 
         help='Time (sec) that client should run for.')
+
+    parser.add_argument('-v', '--version', action='version', 
+        version='Storage Client v{}'.format(__version__))
 
     return parser.parse_args()
 
