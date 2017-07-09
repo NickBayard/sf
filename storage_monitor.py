@@ -20,7 +20,7 @@ class StorageMonitor(multiprocessing.Process):
             self.name = process.name
 
 
-    def __init__(self, name, processes=[]):
+    def __init__(self, processes, name=None):
         super(StorageMonitor, self).__init__(name=name)
         self.processes = [self.ProcessData(p) for p in processes]
 
@@ -50,4 +50,5 @@ class StorageMonitor(multiprocessing.Process):
                                                                process.cpu, 
                                                                process.mem, 
                                                                process.etime))
-                time.sleep(STORAGE_CONSUMER_POLL_PERIOD)
+
+            time.sleep(self.STORAGE_CONSUMER_POLL_PERIOD)

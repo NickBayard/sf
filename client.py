@@ -20,18 +20,17 @@ from storage_monitor import StorageMonitor
 
 def main(config):
     print('main pid {}'.format(os.getpid()))
-    processes = []
+    consumers = []
     for id in xrange(config.storage_count):
         process_name = 'Storage_Consumer_{}'.format(id) 
 
-        p = StorageConsumer(process_name, 
-                            config.chunk_sizes[id],
-                            config.file_sizes[id])
-
-        processes.append(p)
-        p.start()
+        consumer = StorageConsumer(chunk_size=config.chunk_sizes[id],
+                            file_size=config.file_sizes[id],
+                            name=process_name)
+        consumers.append(consumer)
+        consumer.start()
     
-    monitor = StorageMonitor('Monitor', processes)
+    monitor = StorageMonitor(processes=consumers, name='Monitor')
     monitor.start()
 
     # FIXME
