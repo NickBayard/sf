@@ -18,31 +18,20 @@ from client_config import ClientConfig
 from storage_consumer import StorageConsumer
 from storage_monitor import StorageMonitor
 
-def storage_factory(chunk_size, file_size):
-    storage = StorageConsumer(chunk_size, file_size)
-    storage.run()
-
-def monitor_factory(processes):
-    monitor = StorageMonitor(processes)
-    monitor.run()
-
 def main(config):
     print('main pid {}'.format(os.getpid()))
     processes = []
-    for id in range(config.storage_count):
+    for id in xrange(config.storage_count):
         process_name = 'Storage_Consumer_{}'.format(id) 
 
-        p = multiprocessing.Process(target=storage_factory, 
-                                    name=process_name,
-                                    args=(config.chunk_sizes[id], 
-                                          config.file_sizes[id]))
+        p = StorageConsumer(process_name, 
+                            config.chunk_sizes[id],
+                            config.file_sizes[id])
 
         processes.append(p)
         p.start()
     
-    monitor = multiprocessing.Process(target=monitor_factory,
-                                      name='Monitor',
-                                      args=(processes,))
+    monitor = StorageMonitor('Monitor', processes)
     monitor.start()
 
     # FIXME

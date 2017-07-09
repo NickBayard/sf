@@ -8,14 +8,15 @@ import os.path
 import subprocess
 import multiprocessing
 
-class StorageConsumer(object):
-    def __init__(self, chunk_size, file_size):
-        self.name = multiprocessing.current_process().name
+class StorageConsumer(multiprocessing.Process):
+    def __init__(self, name, chunk_size, file_size):
+        super(StorageConsumer, self).__init__(name=name)
         self.chunk_size = chunk_size * 1000000
         self.file_size = file_size * 1000000
-        print('{} pid {}'.format(self.name, multiprocessing.current_process().pid))
+        #print('{} pid {}'.format(self.name, multiprocessing.current_process().pid))
 
     def run(self):
+        print('{} pid {}'.format(self.name, self.pid))
         #file_num = 0
         #while True:  # TODO change to a kill event from master
         for file_num in range(1):

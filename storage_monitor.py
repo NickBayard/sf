@@ -10,7 +10,7 @@ import multiprocessing
 import subprocess
 import re
 
-class StorageMonitor(object):
+class StorageMonitor(multiprocessing.Process):
     STORAGE_CONSUMER_POLL_PERIOD = 10
 
     class ProcessData(object):
@@ -20,13 +20,12 @@ class StorageMonitor(object):
             self.name = process.name
 
 
-    def __init__(self, processes=[]):
-        self.name = multiprocessing.current_process().name
+    def __init__(self, name, processes=[]):
+        super(StorageMonitor, self).__init__(name=name)
         self.processes = [self.ProcessData(p) for p in processes]
-        print('Monitor pid {}'.format(multiprocessing.current_process().pid))
-
 
     def run(self):
+        print('Monitor pid {}'.format(self.pid))
         while True:  # TODO Replace with kill event
             for process in self.processes:
                 command = ['ps', '-p', str(process.pid), '-o', 'pcpu,pmem,etimes']
@@ -45,8 +44,10 @@ class StorageMonitor(object):
                 if not len(response_items) == 3:
                     break
 
-                cpu, mem, etime = response_items
+                process.cpu, process.mem, process.etime = response_items
                 print('{} pid {} cpu {} mem {} time {}'.format(process.name,
                                                                process.pid,
-                                                               cpu, mem, etime))
-                time.sleep(3)
+                                                               process.cpu, 
+                                                               process.mem, 
+                                                               process.etime))
+                time.sleep(STORAGE_CONSUMER_POLL_PERIOD)
