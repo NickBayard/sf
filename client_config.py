@@ -1,12 +1,10 @@
-#! /usr/bin/env python2
-
 '''Enter module docstring here'''
 
 import yaml
 
 class ClientConfig(yaml.YAMLObject):
     yaml_tag = u'!ClientConfig'
-    
+
     def __init__(self, storage_count, default_chunk_size, default_file_size,
                  chunk_sizes, file_sizes, monitor_poll_period, runtime):
 
@@ -29,5 +27,5 @@ class ClientConfig(yaml.YAMLObject):
         repr_string += 'monitor_poll_period=%r, ' % (self.monitor_poll_period)
         repr_string += 'runtime=%r, ' % (self.runtime)
 
-        repr_string += ')' 
+        repr_string += ')'
         return  repr_string

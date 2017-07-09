@@ -21,40 +21,55 @@ except ImportError:
 from client_config import ClientConfig
 from storage_consumer import StorageConsumer
 from storage_monitor import StorageMonitor
+from storage_heartbeat import StorageHeartbeat
+from process_containers import HeartbeatData
 
-class ProcessInfo(object):
-    def __init__(self, process, pipe):
-        self.process = process
-        self.pipe = pipe
 
 def main(config):
     print('main pid {}'.format(os.getpid()))
 
+    # Create a single consumer (heartbeat), multiple producer queue.
+    # The storage consumers and storage monitor processes will send their start,
+    # stop and status messages to be handled by the heartbeat instance.
     slave_queue = multiprocessing.Queue()
     consumers = []
 
     for id in xrange(config.storage_count):
-        process_name = 'Storage_Consumer_{}'.format(id) 
+        process_name = 'Storage_Consumer_{}'.format(id)
+
+        # Each storage consumer process will have its own pipe, which the
+        # heartbeat instance will use to poll is the consumer is alive. The
+        # consumer will then respond on the other end of the pipe.
         master, slave = multiprocessing.Pipe()
-        consumer = ProcessInfo(process=StorageConsumer(chunk_size=config.chunk_sizes[id],
-                                                       file_size=config.file_sizes[id],
-                                                       heartbeat=slave,
-                                                       report_queue=slave_queue,
-                                                       name=process_name),
-                               pipe=master)
+
+        consumer = HeartbeatData(
+                        process=StorageConsumer(id=id,
+                                                chunk_size=config.chunk_sizes[id],
+                                                file_size=config.file_sizes[id],
+                                                heartbeat=slave,
+                                                report_queue=slave_queue,
+                                                name=process_name),
+                        pipe=master)
         consumers.append(consumer)
         consumer.process.start()
-    
+
+    # Similar to the storage consumers, the monitor process will use this pipe
+    # to commuicate with the heartbeat instance to indicate that it is alive.
     master, slave = multiprocessing.Pipe()
-    monitor = StorageMonitor(processes=[c.process for c in consumers], 
+
+    monitor = StorageMonitor(processes=[c.process for c in consumers],
                              heartbeat=slave,
                              report_queue=slave_queue,
                              poll_period=config.monitor_poll_period,
                              name='Monitor')
     monitor.start()
+
+    # Storage consumers and the storage monitor are seperate processes, but
+    # the heartbeat is just a class running in this process.
     heartbeat = StorageHeartbeat(consumers=consumers,
                                  monitor_pipe=master,
-                                 report_in=slave_queue)
+                                 report_in=slave_queue,
+                                 runtime=config.runtime)
     heartbeat.run()
 
     # FIXME
@@ -76,20 +91,20 @@ def update_config(config, args):
 
     # Chunk sizes for each storage consumer are individually configurable.
     if len(config.chunk_sizes) > config.storage_count:
-        # There were extra chunk sizes specified. 
+        # There were extra chunk sizes specified.
         config.chunk_sizes = config.chunk_sizes[:config.storage_count]
     elif len(config.chunk_sizes) < config.storage_count:
         # Not enough chunk sizes.  Backfill with default
-        config.chunk_sizes.extend([config.default_chunk_size] * 
+        config.chunk_sizes.extend([config.default_chunk_size] *
             (config.storage_count - len(config.chunk_sizes)))
 
     # File sizes for each storage consumer are individually configurable.
     if len(config.file_sizes) > config.storage_count:
-        # There were extra file sizes specified. 
+        # There were extra file sizes specified.
         config.file_sizes = config.file_sizes[:config.storage_count]
     elif len(config.file_sizes) < config.storage_count:
         # Not enough file sizes.  Backfill with default
-        config.file_sizes.extend([config.default_file_size] * 
+        config.file_sizes.extend([config.default_file_size] *
             (config.storage_count - len(config.file_sizes)))
 
     # TODO One more of ^these guys^ and we need to refactor
@@ -132,10 +147,10 @@ def get_command_line_args():
         help='''File size in MB for storage consumers if sizes for all
                 consumers are not specificed in --config-file.''')
 
-    parser.add_argument('-t', '--runtime', metavar= 'SECS', type=int, 
+    parser.add_argument('-t', '--runtime', metavar= 'SECS', type=int,
         help='Time (sec) that client should run for.')
 
-    parser.add_argument('-v', '--version', action='version', 
+    parser.add_argument('-v', '--version', action='version',
         version='Storage Client v{}'.format(__version__))
 
     return parser.parse_args()
