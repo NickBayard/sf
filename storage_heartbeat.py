@@ -2,11 +2,8 @@
 
 from __future__ import print_function
 import os
-import os.path
 import time
-import multiprocessing
 from threading import Thread, Event
-from datetime import datetime
 from Queue import Empty
 
 from process_containers import Message
@@ -21,14 +18,17 @@ class StorageHeartbeat(object):
         self.monitor_pipe = monitor_pipe
         self.report_in = report_in
         self.runtime = runtime
+        self.message_history = {}
 
     def _handle_heartbeat(self, message):
+        print('{} received by HB'.format(repr(message)))
         return message.type == 'HEARTBEAT'
 
     def _handle_heartbeat_error(self, message):
         pass
 
     def _handle_kill(self, message):
+        print('{} received by HB'.format(repr(message)))
         return message.type == 'STOP'
 
     def _handle_kill_error(self, message):
@@ -37,6 +37,7 @@ class StorageHeartbeat(object):
     def _poll_processes(self, message, timeout, handler, error_handler):
         for consumer in self.consumers:  #HeartbeatData
             consumer.pipe.send(message)
+            print('{} sent to consumer {}'.format(repr(message), consumer.process.id))
 
         # Poll the monitor and self.consumers until we get all responses or until
         # we timeout.
@@ -54,7 +55,7 @@ class StorageHeartbeat(object):
             for consumer in self.consumers:
                 if consumer.pipe.poll():
                     response = consumer.pipe.recv()
-                    if _handler(response):
+                    if handler(response):
                         responses.append(response)
 
         if len(responses) < len(self.consumers) + 1:
@@ -70,15 +71,15 @@ class StorageHeartbeat(object):
 
             # Send out heartbeat requests
             message = Message(name='Heartbeat',
-                            id=0,
-                            date_time=None,
-                            type='HEARTBEAT',
-                            payload=None)
+                              id=0,
+                              date_time=None,
+                              type='HEARTBEAT',
+                              payload=None)
 
             self._poll_processes(message=message,
                                  timeout=self.HEARTBEAT_RESPONSE_TIMEOUT,
-                                 handler=_handle_heartbeat,
-                                 error_handler=_handle_heartbeat_error)
+                                 handler=self._handle_heartbeat,
+                                 error_handler=self._handle_heartbeat_error)
 
             # Subtract the elapsed time from the HEARTBEAT_POLL_INTERVAL for
             # more accurate heartbeat intervals
@@ -96,11 +97,15 @@ class StorageHeartbeat(object):
 
         self._poll_processes(message=message,
                              timeout=self.HEARTBEAT_KILL_TIMEOUT,
-                             handler=_handle_kill,
-                             error_handler=_handle_kill_error)
+                             handler=self._handle_kill,
+                             error_handler=self._handle_kill_error)
 
     def process_message(self, message):
-        pass
+        # message_history is a dict with:
+        # keys -> tuple of process name and id/index
+        # values -> the received message
+        self.message_history.setdefault((message.name, message.id),[]).append(message)
+        print('{} received by HB'.format(repr(message)))
 
     def process_message_queue(self):
         while not self.kill.is_set():
@@ -108,7 +113,7 @@ class StorageHeartbeat(object):
             for _ in [None]:
                 try:
                     message = self.report_in.get(block=True, timeout=2)
-                except Queue.Empty:
+                except Empty:
                     break
 
                 self.process_message(message)
@@ -117,12 +122,14 @@ class StorageHeartbeat(object):
         while not self.report_in.empty():
             try:
                 message = self.report_in.get()
-            except Queue.Empty:
+            except Empty:
                 break # We shouldn't ever get here
 
             self.process_message(message)
 
     def run(self):
+        print('Heartbeat pid {}'.format(os.getpid()))
+
         self.kill = Event() # This signals process_message_queue to finish up
         t = Thread(target=self.process_message_queue)
         t.start()
@@ -134,5 +141,6 @@ class StorageHeartbeat(object):
 
         # Finish processing remaining messages from child processes
         self.kill.set()
+        print('Kill')
         t.join()
 

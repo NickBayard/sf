@@ -2,9 +2,7 @@
 
 from __future__ import print_function
 import os
-import os.path
 import time
-import multiprocessing
 import subprocess
 import re
 from datetime import datetime
@@ -19,10 +17,11 @@ class StorageMonitor(StorageObject):
                                              heartbeat=heartbeat,
                                              report=report,
                                              name=name)
-        self.processes = [self.MonitorData(p) for p in processes]
+        self.processes = [MonitorData(p) for p in processes]
         self.poll_period = poll_period
 
     def run(self):
+        print('Monitor pid {}'.format(os.getpid()))
         # Report that monitor has started running
         self.report.put(Message(name='Monitor',
                                 id=0,
@@ -52,10 +51,11 @@ class StorageMonitor(StorageObject):
 
                 process.cpu, process.mem, process.etime = response_items
 
-                message = Message(name='Monitor',
-                                    id=0,
-                                    date_time=datetime.now(),
-                                    message=process)
+                self.report.put(Message(name='Monitor',
+                                        id=0,
+                                        date_time=datetime.now(),
+                                        type='MONITOR',
+                                        payload=process))
 
             # Check for the heartbeat or kill message before sleeping
             if not self.check_heartbeat():
@@ -68,8 +68,8 @@ class StorageMonitor(StorageObject):
                 time.sleep(sleep_time)
 
         # Report that monitor has stopped running
-        self.report.put(Message(name='Monitor',
-                                id=0,
-                                date_time=datetime.now(),
-                                type='STOP',
-                                payload=None))
+        self.heartbeat.send(Message(name='Monitor',
+                                    id=0,
+                                    date_time=datetime.now(),
+                                    type='STOP',
+                                    payload=None))

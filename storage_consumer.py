@@ -4,7 +4,7 @@ from __future__ import print_function
 import os
 import os.path
 import subprocess
-import multiprocessing
+from datetime import datetime
 
 from storage_object import StorageObject
 from process_containers import Message
@@ -19,6 +19,7 @@ class StorageConsumer(StorageObject):
         self.file_size = file_size * 1000000
 
     def run(self):
+        print('Consumer {} pid {}'.format(self.id, os.getpid()))
         # Report that this consumer had started running
         self.report.put(Message(name='Consumer',
                                 id=self.id,
@@ -50,8 +51,8 @@ class StorageConsumer(StorageObject):
             file_num += 1
 
         # Report that this consumer had stopped running
-        self.report.put(Message(name='Consumer',
-                                id=self.id,
-                                date_time=datetime.now(),
-                                type='STOP',
-                                payload=None))
+        self.heartbeat.send(Message(name='Consumer',
+                                    id=self.id,
+                                    date_time=datetime.now(),
+                                    type='STOP',
+                                    payload=None))

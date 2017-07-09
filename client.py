@@ -8,7 +8,6 @@ __version__ = '1.3.3.7'
 __author__ = 'Nick Bayard'
 
 import sys
-import os
 import os.path
 import argparse
 import multiprocessing
@@ -26,12 +25,11 @@ from process_containers import HeartbeatData
 
 
 def main(config):
-    print('main pid {}'.format(os.getpid()))
-
     # Create a single consumer (heartbeat), multiple producer queue.
     # The storage consumers and storage monitor processes will send their start,
     # stop and status messages to be handled by the heartbeat instance.
-    slave_queue = multiprocessing.Queue()
+    manager = multiprocessing.Manager()
+    slave_queue = manager.Queue()
     consumers = []
 
     for id in xrange(config.storage_count):
