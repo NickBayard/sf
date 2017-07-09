@@ -5,8 +5,9 @@ import os
 import os.path
 import time
 import multiprocessing
-import threading
+from threading import Thread, Event
 from datetime import datetime
+from Queue import Empty
 
 from process_containers import Message
 
@@ -72,7 +73,7 @@ class StorageHeartbeat(object):
                             id=0,
                             date_time=None,
                             type='HEARTBEAT',
-                            payload=None))
+                            payload=None)
 
             self._poll_processes(message=message,
                                  timeout=self.HEARTBEAT_RESPONSE_TIMEOUT,
@@ -98,6 +99,40 @@ class StorageHeartbeat(object):
                              handler=_handle_kill,
                              error_handler=_handle_kill_error)
 
+    def process_message(self, message):
+        pass
+
+    def process_message_queue(self):
+        while not self.kill.is_set():
+            # We just need a block to break from if an Empty exception occurs
+            for _ in [None]:
+                try:
+                    message = self.report_in.get(block=True, timeout=2)
+                except Queue.Empty:
+                    break
+
+                self.process_message(message)
+
+        # Kill event was set. Finish processing the remaining events in the queue
+        while not self.report_in.empty():
+            try:
+                message = self.report_in.get()
+            except Queue.Empty:
+                break # We shouldn't ever get here
+
+            self.process_message(message)
+
     def run(self):
+        self.kill = Event() # This signals process_message_queue to finish up
+        t = Thread(target=self.process_message_queue)
+        t.start()
+
+        # Let _do_heartbeat decide how long to run for
         self._do_heartbeat()
+        # Then kill all child processes
         self._kill_all()
+
+        # Finish processing remaining messages from child processes
+        self.kill.set()
+        t.join()
+

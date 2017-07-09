@@ -45,7 +45,7 @@ class StorageConsumer(StorageObject):
                                     id=self.id,
                                     date_time=datetime.now(),
                                     type='ROLLOVER',
-                                    payload=filename)
+                                    payload=filename))
 
             file_num += 1
 
