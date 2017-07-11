@@ -10,3 +10,4 @@ chunk_sizes: [10, 11, 12]    # MB
 file_sizes: [100, 110, 120]  # MB
 monitor_poll_period: 10  # Seconds
 runtime: 10  # Seconds
+log_level: 'DEBUG'  #'INFO'

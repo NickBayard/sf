@@ -2,8 +2,6 @@
 
 '''Enter module docstring here'''
 
-from __future__ import print_function
-
 __version__ = '1.3.3.7'
 __author__ = 'Nick Bayard'
 
@@ -68,7 +66,8 @@ def main(config):
     heartbeat = StorageHeartbeat(consumers=consumers,
                                  monitor_pipe=master,
                                  report_in=slave_queue,
-                                 runtime=config.runtime)
+                                 runtime=config.runtime,
+                                 log_level=config.log_level)
     heartbeat.run()
 
     # FIXME

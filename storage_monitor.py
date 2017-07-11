@@ -1,6 +1,5 @@
 '''Enter module docstring here'''
 
-from __future__ import print_function
 import os
 import time
 import subprocess
@@ -22,7 +21,6 @@ class StorageMonitor(StorageObject):
         self.poll_period = poll_period
 
     def run(self):
-        print('Monitor pid {}'.format(os.getpid()))
         # Report that monitor has started running
         self.report.put(Message(name='Monitor',
                                 id=0,

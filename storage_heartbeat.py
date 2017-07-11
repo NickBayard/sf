@@ -1,34 +1,41 @@
 '''Enter module docstring here'''
 
-from __future__ import print_function
 import os
 import time
 from threading import Thread, Event
 from Queue import Empty
 
 from process_containers import Message
+from logging_config import configure_logging
 
 class StorageHeartbeat(object):
     HEARTBEAT_RESPONSE_TIMEOUT = 3
     HEARTBEAT_POLL_INTERVAL = 5
     HEARTBEAT_KILL_TIMEOUT = 10
 
-    def __init__(self, consumers, monitor_pipe, report_in, runtime):
+    def __init__(self, consumers, monitor_pipe, report_in, runtime,
+                 log_level='INFO'):
         self.consumers = consumers
         self.monitor_pipe = monitor_pipe
         self.report_in = report_in
         self.runtime = runtime
         self.message_history = {}
+        self.log = configure_logging(log_level, 'Heartbeat')
+
+    def _log_message_received(self, message):
+        self.log.info('Message received from {}_{}: {}'.format(message.name,
+                                                               message.id,
+                                                               repr(message)))
 
     def _handle_heartbeat(self, message):
-        print('{} received by HB'.format(repr(message)))
+        self._log_message_received(message)
         return message.type == 'HEARTBEAT'
 
     def _handle_heartbeat_error(self, message):
         pass
 
     def _handle_kill(self, message):
-        print('{} received by HB'.format(repr(message)))
+        self._log_message_received(message)
         return message.type == 'STOP'
 
     def _handle_kill_error(self, message):
@@ -36,11 +43,12 @@ class StorageHeartbeat(object):
 
     def _poll_processes(self, message, timeout, handler, error_handler):
         self.monitor_pipe.send(message)
-        print('{} sent to monitor'.format(repr(message)))
+        self.log.info('Message sent to Monitor: {}'.format(repr(message)))
 
         for consumer in self.consumers:  #HeartbeatData
             consumer.pipe.send(message)
-            print('{} sent to consumer {}'.format(repr(message), consumer.process.id))
+            self.log.info('Message sent to Consumer_{}: {}'.format(consumer.process.id,
+                                                                   repr(message)))
 
         # Poll the monitor and self.consumers until we get all responses or until
         # we timeout.
@@ -108,7 +116,9 @@ class StorageHeartbeat(object):
         # keys -> tuple of process name and id/index
         # values -> the received message
         self.message_history.setdefault((message.name, message.id),[]).append(message)
-        print('{} received by HB'.format(repr(message)))
+        self.log.info('Message received from {}_{}: {}'.format(message.name,
+                                                               message.id,
+                                                               repr(message)))
 
     def process_message_queue(self):
         while not self.kill.is_set():
@@ -131,8 +141,6 @@ class StorageHeartbeat(object):
             self.process_message(message)
 
     def run(self):
-        print('Heartbeat pid {}'.format(os.getpid()))
-
         self.kill = Event() # This signals process_message_queue to finish up
         t = Thread(target=self.process_message_queue)
         t.start()
@@ -144,6 +152,4 @@ class StorageHeartbeat(object):
 
         # Finish processing remaining messages from child processes
         self.kill.set()
-        print('Kill')
         t.join()
-

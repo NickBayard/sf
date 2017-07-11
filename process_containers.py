@@ -1,7 +1,5 @@
 '''Enter module docstring here'''
 
-#from collections import namedtuple
-
 class HeartbeatData(object):
 
     def __init__(self, process, pipe):
@@ -49,5 +47,3 @@ class Message(object):
         repr_string += 'payload={}, '.format(repr(self.payload))
         repr_string += ')'
         return repr_string
-
-#Message = namedtuple('Message', 'name id date_time type payload')

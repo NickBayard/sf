@@ -6,7 +6,8 @@ class ClientConfig(yaml.YAMLObject):
     yaml_tag = u'!ClientConfig'
 
     def __init__(self, storage_count, default_chunk_size, default_file_size,
-                 chunk_sizes, file_sizes, monitor_poll_period, runtime):
+                 chunk_sizes, file_sizes, monitor_poll_period, runtime,
+                 log_level):
 
         self.storage_count = storage_count
         self.default_chunk_size = default_size
@@ -15,6 +16,7 @@ class ClientConfig(yaml.YAMLObject):
         self.file_sizes = file_sizes
         self.monitor_poll_period = monitor_poll_period
         self.runtime = runtime
+        self.log_level = log_level
 
     def __repr__(self):
         repr_string = '%s(' % (self.__class__.__name__)
@@ -26,6 +28,7 @@ class ClientConfig(yaml.YAMLObject):
         repr_string += 'file_sizes=%r, ' % (self.file_sizes)
         repr_string += 'monitor_poll_period=%r, ' % (self.monitor_poll_period)
         repr_string += 'runtime=%r, ' % (self.runtime)
+        repr_string += 'log_level=%r, ' % (self.log_level)
 
         repr_string += ')'
         return  repr_string

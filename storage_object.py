@@ -1,6 +1,5 @@
 '''Enter module docstring here'''
 
-from __future__ import print_function
 import multiprocessing
 from datetime import datetime
 

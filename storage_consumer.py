@@ -1,6 +1,5 @@
 '''Enter module docstring here'''
 
-from __future__ import print_function
 import os
 import os.path
 import subprocess
@@ -19,7 +18,6 @@ class StorageConsumer(StorageObject):
         self.file_size = file_size * 1000000
 
     def run(self):
-        print('Consumer {} pid {}'.format(self.id, os.getpid()))
         # Report that this consumer had started running
         self.report.put(Message(name='Consumer',
                                 id=self.id,
