@@ -20,10 +20,17 @@ class StorageMonitor(StorageObject):
         self.processes = [MonitorData(p) for p in processes]
         self.poll_period = poll_period
 
+    def monitor_error(self, process):
+        self.report.put(Message(name=self.name,
+                                id=self.id,
+                                date_time=datetime.now(),
+                                type='MONITOR_ERROR',
+                                payload=process))
+
     def run(self):
         # Report that monitor has started running
-        self.report.put(Message(name='Monitor',
-                                id=0,
+        self.report.put(Message(name=self.name,
+                                id=self.id,
                                 date_time=datetime.now(),
                                 type='START',
                                 payload=None))
@@ -36,22 +43,25 @@ class StorageMonitor(StorageObject):
                 try:
                     response = subprocess.check_output(command).split(b'\n')
                 except CalledProcessError:
-                    break # TODO
+                    self.monitor_error(process)
+                    break
 
                 # Check the first line of the response for 'CPU' and 'MEM'
                 # to ensure that ps returned valid output
                 match = re.search('CPU.+MEM', response[0])
                 if match is None:
+                    self.monitor_error(process)
                     break
 
                 response_items = response[1].split()
                 if not len(response_items) == 3:
+                    self.monitor_error(process)
                     break
 
                 process.cpu, process.mem, process.etime = response_items
 
-                self.report.put(Message(name='Monitor',
-                                        id=0,
+                self.report.put(Message(name=self.name,
+                                        id=self.id,
                                         date_time=datetime.now(),
                                         type='MONITOR',
                                         payload=process))
@@ -83,8 +93,8 @@ class StorageMonitor(StorageObject):
                     break
 
         # Report that monitor has stopped running
-        self.heartbeat.send(Message(name='Monitor',
-                                    id=0,
+        self.heartbeat.send(Message(name=self.name,
+                                    id=self.id,
                                     date_time=datetime.now(),
                                     type='STOP',
                                     payload=None))

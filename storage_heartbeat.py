@@ -13,10 +13,10 @@ class StorageHeartbeat(object):
     HEARTBEAT_POLL_INTERVAL = 5
     HEARTBEAT_KILL_TIMEOUT = 10
 
-    def __init__(self, consumers, monitor_pipe, report_in, runtime,
+    def __init__(self, consumers, monitor, report_in, runtime,
                  log_level='INFO'):
         self.consumers = consumers
-        self.monitor_pipe = monitor_pipe
+        self.monitor = monitor
         self.report_in = report_in
         self.runtime = runtime
         self.message_history = {}
@@ -32,6 +32,9 @@ class StorageHeartbeat(object):
         return message.type == 'HEARTBEAT'
 
     def _handle_heartbeat_error(self, message):
+        # Sender of this messsage did not respond to the heartbeat in time.
+        # It may have been killed
+        # TODO send message to server indicating a process died
         pass
 
     def _handle_kill(self, message):
@@ -39,10 +42,13 @@ class StorageHeartbeat(object):
         return message.type == 'STOP'
 
     def _handle_kill_error(self, message):
+        # Sender of this messsage did not respond to the kill message in time.
+        # It may have been killed
+        # TODO send message to server indicating a process died
         pass
 
     def _poll_processes(self, message, timeout, handler, error_handler):
-        self.monitor_pipe.send(message)
+        self.monitor.pipe.send(message)
         self.log.info('Message sent to Monitor: {}'.format(repr(message)))
 
         for consumer in self.consumers:  #HeartbeatData
@@ -58,8 +64,8 @@ class StorageHeartbeat(object):
         while time.time() < response_stop and \
             len(responses) < len(self.consumers) + 1:
 
-            if self.monitor_pipe.poll():
-                response = self.monitor_pipe.recv()
+            if self.monitor.pipe.poll():
+                response = self.monitor.pipe.recv()
                 if handler(response):
                     responses.append(response)
 
@@ -71,8 +77,16 @@ class StorageHeartbeat(object):
 
         if len(responses) < len(self.consumers) + 1:
             # We must have timed out.  Check for missed responses
-            for reponse in responses:
-                error_handler(response)
+            responding_processes = set([(proc.name, proc.id) for proc in responses])
+            processes = set([(consumer.proc.name, consumer.proc.id) for consumer in consumers])
+            processes.add((self.monitor.process.name, self.monitor.process.id))
+
+            nonresponding_processes = processes - responding_processes
+
+            for name, id in non_responding_processes:
+                for response in responses:
+                    if response.name == name and response.id == id:
+                        error_handler(response)
 
     def _do_heartbeat(self):
         heartbeat_stop = time.time() + self.runtime

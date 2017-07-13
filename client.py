@@ -31,8 +31,6 @@ def main(config):
     consumers = []
 
     for id in xrange(config.storage_count):
-        process_name = 'Storage_Consumer_{}'.format(id)
-
         # Each storage consumer process will have its own pipe, which the
         # heartbeat instance will use to poll is the consumer is alive. The
         # consumer will then respond on the other end of the pipe.
@@ -44,7 +42,7 @@ def main(config):
                                                 file_size=config.file_sizes[id],
                                                 heartbeat=slave,
                                                 report=slave_queue,
-                                                name=process_name),
+                                                name='Consumer'),
                         pipe=master)
         consumers.append(consumer)
         consumer.process.start()
@@ -64,7 +62,8 @@ def main(config):
     # Storage consumers and the storage monitor are seperate processes, but
     # the heartbeat is just a class running in this process.
     heartbeat = StorageHeartbeat(consumers=consumers,
-                                 monitor_pipe=master,
+                                 monitor=HeartbeatData(process=monitor,
+                                                       pipe=master),
                                  report_in=slave_queue,
                                  runtime=config.runtime,
                                  log_level=config.log_level)
@@ -103,10 +102,11 @@ def update_config(config, args):
         config.file_sizes.extend([config.default_file_size] *
             (config.storage_count - len(config.file_sizes)))
 
-    # TODO One more of ^these guys^ and we need to refactor
-
     config.runtime = args.runtime if args.runtime is not None \
         else config.runtime
+
+    config.log_level = args.log_level if args.log_level is not None \
+        else config.log_level
 
 def get_config(args):
     if not os.path.exists(args.config_path) or \
@@ -145,6 +145,10 @@ def get_command_line_args():
 
     parser.add_argument('-t', '--runtime', metavar= 'SECS', type=int,
         help='Time (sec) that client should run for.')
+
+    parser.add_argument('-l', '--log-level', choices=['INFO', 'DEBUG'],
+        dest='log_level',
+        help='Default logging level.')
 
     parser.add_argument('-v', '--version', action='version',
         version='Storage Client v{}'.format(__version__))
