@@ -1,4 +1,6 @@
 --- !ClientConfig
+host: '127.0.0.1'
+host_port: 10000
 storage_count: 1
 default_chunk_size: 10  # MB
 default_file_size: 100  # MB
@@ -9,5 +11,6 @@ default_file_size: 100  # MB
 chunk_sizes: [10, 11, 12]    # MB
 file_sizes: [100, 110, 120]  # MB
 monitor_poll_period: 10  # Seconds
+heartbeat_poll_period: 5 # Seconds
 runtime: 10  # Seconds
 log_level: 'DEBUG'  #'INFO'

@@ -66,6 +66,8 @@ def main(config):
                                                        pipe=master),
                                  report_in=slave_queue,
                                  runtime=config.runtime,
+                                 poll_period=config.heartbeat_poll_period,
+                                 server=(config.host,config.host_port),
                                  log_level=config.log_level)
     heartbeat.run()
 

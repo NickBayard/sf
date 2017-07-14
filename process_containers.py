@@ -24,7 +24,7 @@ class MonitorData(object):
         repr_string += 'name={}, '.format(self.name)
         repr_string += 'cpu={}, '.format(self.cpu)
         repr_string += 'mem={}, '.format(self.mem)
-        repr_string += 'etime={}, '.format(self.etime)
+        repr_string += 'etime={}'.format(self.etime)
         repr_string += ')'
         return repr_string
 
@@ -44,6 +44,6 @@ class Message(object):
         repr_string += 'name={}, '.format(self.name)
         repr_string += 'id={}, '.format(self.id)
         repr_string += 'type={}, '.format(self.type)
-        repr_string += 'payload={}, '.format(repr(self.payload))
+        repr_string += 'payload={}'.format(repr(self.payload))
         repr_string += ')'
         return repr_string

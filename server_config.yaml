@@ -1,0 +1,4 @@
+--- !ServerConfig
+host: '0.0.0.0'  # Server will listen on all available interfaces
+port: 10000
+log_level: 'DEBUG'  #'INFO'

@@ -2,6 +2,8 @@
 
 import os
 import time
+import socket
+import pickle
 from threading import Thread, Event
 from Queue import Empty
 
@@ -10,51 +12,42 @@ from logging_config import configure_logging
 
 class StorageHeartbeat(object):
     HEARTBEAT_RESPONSE_TIMEOUT = 3
-    HEARTBEAT_POLL_INTERVAL = 5
     HEARTBEAT_KILL_TIMEOUT = 10
 
     def __init__(self, consumers, monitor, report_in, runtime,
-                 log_level='INFO'):
+                 poll_period, server, log_level='INFO'):
         self.consumers = consumers
         self.monitor = monitor
         self.report_in = report_in
         self.runtime = runtime
-        self.message_history = {}
-        self.log = configure_logging(log_level, 'Heartbeat')
+        self.poll_period = poll_period
+        self.log = configure_logging(log_level, 'Client')
+        self.server = server
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def _log_message_received(self, message):
         self.log.info('Message received from {}_{}: {}'.format(message.name,
                                                                message.id,
                                                                repr(message)))
 
-    def _handle_heartbeat(self, message):
-        self._log_message_received(message)
-        return message.type == 'HEARTBEAT'
-
-    def _handle_heartbeat_error(self, message):
-        # Sender of this messsage did not respond to the heartbeat in time.
-        # It may have been killed
-        # TODO send message to server indicating a process died
+    def _log_message_sent(self, message, process):
+        self.log.info('Message sent to {}_{}: {}'.format(process.name,
+                                                         process.id,
+                                                         repr(message)))
+    def _handle_heartbeat(self, responses, missing):
         pass
 
-    def _handle_kill(self, message):
-        self._log_message_received(message)
-        return message.type == 'STOP'
-
-    def _handle_kill_error(self, message):
-        # Sender of this messsage did not respond to the kill message in time.
-        # It may have been killed
-        # TODO send message to server indicating a process died
+    def _handle_kill(self, responses, missing):
         pass
 
-    def _poll_processes(self, message, timeout, handler, error_handler):
+    def _poll_processes(self, message, timeout, response_type, handler):
+        #Send the message to the monitor and all consumers
         self.monitor.pipe.send(message)
-        self.log.info('Message sent to Monitor: {}'.format(repr(message)))
+        self._log_message_sent(message, self.monitor.pipe)
 
-        for consumer in self.consumers:  #HeartbeatData
+        for consumer in self.consumers:
             consumer.pipe.send(message)
-            self.log.info('Message sent to Consumer_{}: {}'.format(consumer.process.id,
-                                                                   repr(message)))
+            self._log_message_sent(message, consumer.process)
 
         # Poll the monitor and self.consumers until we get all responses or until
         # we timeout.
@@ -66,27 +59,27 @@ class StorageHeartbeat(object):
 
             if self.monitor.pipe.poll():
                 response = self.monitor.pipe.recv()
-                if handler(response):
+                self._log_message_received(message)
+                if response.type == response_type:
                     responses.append(response)
 
             for consumer in self.consumers:
                 if consumer.pipe.poll():
                     response = consumer.pipe.recv()
-                    if handler(response):
+                    self._log_message_received(message)
+                    if response.type == response_type:
                         responses.append(response)
 
+        missing_responses = set([])
         if len(responses) < len(self.consumers) + 1:
             # We must have timed out.  Check for missed responses
             responding_processes = set([(proc.name, proc.id) for proc in responses])
             processes = set([(consumer.proc.name, consumer.proc.id) for consumer in consumers])
             processes.add((self.monitor.process.name, self.monitor.process.id))
 
-            nonresponding_processes = processes - responding_processes
+            missing_responses = processes - responding_processes
 
-            for name, id in non_responding_processes:
-                for response in responses:
-                    if response.name == name and response.id == id:
-                        error_handler(response)
+        handler(responses, missing_responses)
 
     def _do_heartbeat(self):
         heartbeat_stop = time.time() + self.runtime
@@ -103,12 +96,12 @@ class StorageHeartbeat(object):
 
             self._poll_processes(message=message,
                                  timeout=self.HEARTBEAT_RESPONSE_TIMEOUT,
-                                 handler=self._handle_heartbeat,
-                                 error_handler=self._handle_heartbeat_error)
+                                 response_type='HEARTBEAT',
+                                 handler=self._handle_heartbeat)
 
-            # Subtract the elapsed time from the HEARTBEAT_POLL_INTERVAL for
+            # Subtract the elapsed time from the poll_period for
             # more accurate heartbeat intervals
-            sleep_time = self.HEARTBEAT_POLL_INTERVAL - (time.time() - poll_start_time)
+            sleep_time = self.poll_period - (time.time() - poll_start_time)
             if sleep_time > 0:
                 time.sleep(sleep_time)
 
@@ -122,19 +115,20 @@ class StorageHeartbeat(object):
 
         self._poll_processes(message=message,
                              timeout=self.HEARTBEAT_KILL_TIMEOUT,
-                             handler=self._handle_kill,
-                             error_handler=self._handle_kill_error)
+                             response_type='STOP',
+                             handler=self._handle_kill)
 
-    def process_message(self, message):
-        # message_history is a dict with:
-        # keys -> tuple of process name and id/index
-        # values -> the received message
-        self.message_history.setdefault((message.name, message.id),[]).append(message)
-        self.log.info('Message received from {}_{}: {}'.format(message.name,
-                                                               message.id,
-                                                               repr(message)))
+    def _process_message(self, message):
+        self._log_message_received(message)
 
-    def process_message_queue(self):
+        # pickle the message into a string and send to the server
+        # Not secure but sufficient for our purposes
+        ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
+        self.socket.connect(server)
+        self.socket.sendall(ps_message)
+        self.socket.close()
+
+    def _process_message_queue(self):
         while not self.kill.is_set():
             # We just need a block to break from if an Empty exception occurs
             for _ in [None]:
@@ -143,7 +137,7 @@ class StorageHeartbeat(object):
                 except Empty:
                     break
 
-                self.process_message(message)
+                self._process_message(message)
 
         # Kill event was set. Finish processing the remaining events in the queue
         while not self.report_in.empty():
@@ -152,11 +146,11 @@ class StorageHeartbeat(object):
             except Empty:
                 break # We shouldn't ever get here
 
-            self.process_message(message)
+            self._process_message(message)
 
     def run(self):
-        self.kill = Event() # This signals process_message_queue to finish up
-        t = Thread(target=self.process_message_queue)
+        self.kill = Event() # This signals _process_message_queue to finish up
+        t = Thread(target=self._process_message_queue)
         t.start()
 
         # Let _do_heartbeat decide how long to run for
