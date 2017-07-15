@@ -77,6 +77,8 @@ def get_command_line_args():
         default='server_config.yaml',
         help='File path of yaml configuration file for server.')
 
+    # TODO add host arg
+
     parser.add_argument('-p', '--port', type=int,
         help='Listening port for the server')
 

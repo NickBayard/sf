@@ -19,7 +19,7 @@ from client_config import ClientConfig
 from storage_consumer import StorageConsumer
 from storage_monitor import StorageMonitor
 from storage_heartbeat import StorageHeartbeat
-from process_containers import HeartbeatData
+from process_containers import ProcessData
 
 
 def main(config):
@@ -36,7 +36,7 @@ def main(config):
         # consumer will then respond on the other end of the pipe.
         master, slave = multiprocessing.Pipe()
 
-        consumer = HeartbeatData(
+        consumer = ProcessData(
                         process=StorageConsumer(id=id,
                                                 chunk_size=config.chunk_sizes[id],
                                                 file_size=config.file_sizes[id],
@@ -62,7 +62,7 @@ def main(config):
     # Storage consumers and the storage monitor are seperate processes, but
     # the heartbeat is just a class running in this process.
     heartbeat = StorageHeartbeat(consumers=consumers,
-                                 monitor=HeartbeatData(process=monitor,
+                                 monitor=ProcessData(process=monitor,
                                                        pipe=master),
                                  report_in=slave_queue,
                                  runtime=config.runtime,

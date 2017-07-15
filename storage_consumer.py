@@ -9,6 +9,7 @@ from storage_object import StorageObject
 from process_containers import Message
 
 class StorageConsumer(StorageObject):
+    # TODO  Add parameter for consumer file path
     def __init__(self, id, chunk_size, file_size, heartbeat, report, name=None):
         super(StorageConsumer, self).__init__(id=id,
                                               heartbeat=heartbeat,
