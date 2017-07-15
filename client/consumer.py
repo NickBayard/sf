@@ -5,8 +5,8 @@ import os.path
 import subprocess
 from datetime import datetime
 
-from storage_object import StorageObject
-from process_containers import Message
+from process import StorageObject
+from shared import Message
 
 class StorageConsumer(StorageObject):
     # TODO  Add parameter for consumer file path

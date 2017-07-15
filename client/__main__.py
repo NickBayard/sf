@@ -2,9 +2,6 @@
 
 '''Enter module docstring here'''
 
-__version__ = '1.3.3.7'
-__author__ = 'Nick Bayard'
-
 import sys
 import os.path
 import argparse
@@ -15,11 +12,12 @@ try:
 except ImportError:
     sys.exit("PyYaml module not present.  Please run 'pip install pyyaml'")
 
-from client_config import ClientConfig
-from storage_consumer import StorageConsumer
-from storage_monitor import StorageMonitor
-from storage_heartbeat import StorageHeartbeat
-from process_containers import ProcessData
+from . import __version__
+from config import ClientConfig
+from consumer import StorageConsumer
+from monitor import StorageMonitor
+from heartbeat import StorageHeartbeat
+from shared import ProcessData
 
 
 def main(config):

@@ -3,7 +3,7 @@
 import multiprocessing
 from datetime import datetime
 
-from process_containers import Message
+from shared import Message
 
 class StorageObject(multiprocessing.Process):
     def __init__(self, id, heartbeat, report, name=None):

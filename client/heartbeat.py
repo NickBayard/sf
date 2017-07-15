@@ -7,8 +7,7 @@ import pickle
 from threading import Thread, Event
 from Queue import Empty
 
-from process_containers import Message
-from logging_config import configure_logging
+from shared import Message, configure_logging
 
 class StorageHeartbeat(object):
     HEARTBEAT_RESPONSE_TIMEOUT = 3
@@ -43,7 +42,7 @@ class StorageHeartbeat(object):
     def _poll_processes(self, message, timeout, response_type, handler):
         #Send the message to the monitor and all consumers
         self.monitor.pipe.send(message)
-        self._log_message_sent(message, self.monitor.pipe)
+        self._log_message_sent(message, self.monitor.process)
 
         for consumer in self.consumers:
             consumer.pipe.send(message)
@@ -124,7 +123,7 @@ class StorageHeartbeat(object):
         # pickle the message into a string and send to the server
         # Not secure but sufficient for our purposes
         ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
-        self.socket.connect(server)
+        self.socket.connect(self.server)
         self.socket.sendall(ps_message)
         self.socket.close()
 
