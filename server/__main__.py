@@ -8,7 +8,7 @@ import os.path
 import argparse
 import threading
 import pickle
-import SocketServer
+from SocketServer import StreamRequestHandler, TCPServer
 from Queue import Queue
 
 from . import __version__
@@ -20,7 +20,7 @@ try:
 except ImportError:
     sys.exit("PyYaml module not present.  Please run 'pip install pyyaml'")
 
-class Handler(SocketServer.StreamRequestHandler):
+class Handler(StreamRequestHandler):
     def handle(self):
         while True:
             data = self.request.recv(1024)
@@ -34,11 +34,11 @@ class Handler(SocketServer.StreamRequestHandler):
         self.server.message_queue.put(message)
         self.request.close()
 
-class Server(SocketServer.ThreadingTCPServer):
+class Server(TCPServer):
     def __init__(self, log_level, server_address, RequestHandlerClass):
-        SocketServer.ThreadingTCPServer.__init__(self,
-                                                 server_address=server_address,
-                                                 RequestHandlerClass=RequestHandlerClass)
+        TCPServer.__init__(self,
+                           server_address=server_address,
+                           RequestHandlerClass=RequestHandlerClass)
         self.message_queue = Queue()
         self.log = configure_logging(log_level, 'Server')
 
