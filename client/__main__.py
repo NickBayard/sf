@@ -13,7 +13,7 @@ except ImportError:
     sys.exit("PyYaml module not present.  Please run 'pip install pyyaml'")
 
 from . import __version__
-from config import ClientConfig
+from .config import ClientConfig
 from consumer import StorageConsumer
 from monitor import StorageMonitor
 from heartbeat import StorageHeartbeat

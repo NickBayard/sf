@@ -1,11 +1,8 @@
 #! /usr/bin/env python2
 
 '''Enter module docstring here'''
+from __future__ import print_function
 
-__version__ = '1.3.3.7'
-__author__ = 'Nick Bayard'
-
-from __futures__ import print_function
 import sys
 import os.path
 import argparse
@@ -14,8 +11,9 @@ import pickle
 import SocketServer
 from Queue import Queue
 
-import process_containers
-from logging_config import configure_logging
+from . import __version__
+from .config import ServerConfig
+from shared import configure_logging
 
 try:
     import yaml
@@ -38,8 +36,9 @@ class Handler(SocketServer.StreamRequestHandler):
 
 class Server(SocketServer.ThreadingTCPServer):
     def __init__(self, log_level, server_address, RequestHandlerClass):
-        super(Server, self).__init__(server_address=server_address,
-                                     RequestHandlerClass=RequestHandlerClass)
+        SocketServer.ThreadingTCPServer.__init__(self,
+                                                 server_address=server_address,
+                                                 RequestHandlerClass=RequestHandlerClass)
         self.message_queue = Queue()
         self.log = configure_logging(log_level, 'Server')
 
