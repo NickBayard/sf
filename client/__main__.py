@@ -36,6 +36,7 @@ def main(config):
 
         consumer = ProcessData(
                         process=StorageConsumer(id=id,
+                                                path=config.storage_path,
                                                 chunk_size=config.chunk_sizes[id],
                                                 file_size=config.file_sizes[id],
                                                 heartbeat=slave,

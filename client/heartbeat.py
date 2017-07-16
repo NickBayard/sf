@@ -3,7 +3,7 @@
 import os
 import time
 import socket
-import pickle
+import cPickle as pickle
 from threading import Thread, Event
 from Queue import Empty
 
@@ -23,6 +23,8 @@ class StorageHeartbeat(object):
         self.log = configure_logging(log_level, 'Client')
         self.server = server
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.log.info("Connecting to {}".format(self.server))
+        self.socket.connect(self.server)
 
     def _log_message_received(self, message):
         self.log.info('Message received from {}_{}: {}'.format(message.name,
@@ -123,9 +125,12 @@ class StorageHeartbeat(object):
         # pickle the message into a string and send to the server
         # Not secure but sufficient for our purposes
         ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
-        self.socket.connect(self.server)
+
+        # Add a simple prefix to our message indicating the length that the
+        # server should expect.  This allows us to leave the socket open for
+        # all messages
+        ps_message = str(len(ps_message)) + ':::' + ps_message
         self.socket.sendall(ps_message)
-        self.socket.close()
 
     def _process_message_queue(self):
         while not self.kill.is_set():
@@ -160,3 +165,4 @@ class StorageHeartbeat(object):
         # Finish processing remaining messages from child processes
         self.kill.set()
         t.join()
+        self.socket.close()

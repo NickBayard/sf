@@ -8,6 +8,7 @@ class ClientConfig(yaml.YAMLObject):
     def __init__(self,
                  host,
                  host_port,
+                 storage_path,
                  storage_count,
                  default_chunk_size,
                  default_file_size,
@@ -19,6 +20,7 @@ class ClientConfig(yaml.YAMLObject):
 
         self.host = host
         self.host_port = host_port
+        self.storage_path = storage_path
         self.storage_count = storage_count
         self.default_chunk_size = default_size
         self.default_file_size = default_file_size
@@ -34,6 +36,7 @@ class ClientConfig(yaml.YAMLObject):
 
         repr_string += 'host=%r, ' % (self.host)
         repr_string += 'host_port=%r, ' % (self.host_port)
+        repr_string += 'storage_path=%r, ' % (self.storage_path)
         repr_string += 'storage_count=%r, ' % (self.storage_count)
         repr_string += 'default_chunk_size=%r, ' % (self.default_chunk_size)
         repr_string += 'default_file_size=%r, ' % (self.default_file_size)

@@ -6,41 +6,16 @@ from __future__ import print_function
 import sys
 import os.path
 import argparse
-import threading
-import pickle
-from SocketServer import StreamRequestHandler, TCPServer
-from Queue import Queue
 
 from . import __version__
+from .server import Server, Handler
 from .config import ServerConfig
-from shared import configure_logging
 
 try:
     import yaml
 except ImportError:
     sys.exit("PyYaml module not present.  Please run 'pip install pyyaml'")
 
-class Handler(StreamRequestHandler):
-    def handle(self):
-        while True:
-            data = self.request.recv(1024)
-            if not data:
-                break
-            data += data
-
-        message = pickle.loads(data)
-        print("Message received by server: {}".format(message))
-        # TODO need to identify which client this message came from
-        self.server.message_queue.put(message)
-        self.request.close()
-
-class Server(TCPServer):
-    def __init__(self, log_level, server_address, RequestHandlerClass):
-        TCPServer.__init__(self,
-                           server_address=server_address,
-                           RequestHandlerClass=RequestHandlerClass)
-        self.message_queue = Queue()
-        self.log = configure_logging(log_level, 'Server')
 
 def main(config):
     # This server will bind to all available interfaces on this machine and
