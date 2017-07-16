@@ -6,6 +6,8 @@ import sys
 import os.path
 import argparse
 import multiprocessing
+import socket
+import time
 
 try:
     import yaml
@@ -27,6 +29,16 @@ def main(config):
     manager = multiprocessing.Manager()
     slave_queue = manager.Queue()
     consumers = []
+
+    # We create a socket first so that we can poll if the server is ready.
+    # This way the client doesn't start running with no available server.
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    while True:
+        try:
+            client_socket.connect((config.host, config.host_port))
+            break
+        except socket.error:
+            time.sleep(5)
 
     for id in xrange(config.storage_count):
         # Each storage consumer process will have its own pipe, which the
@@ -66,7 +78,7 @@ def main(config):
                                  report_in=slave_queue,
                                  runtime=config.runtime,
                                  poll_period=config.heartbeat_poll_period,
-                                 server=(config.host,config.host_port),
+                                 client_socket=client_socket,
                                  log_level=config.log_level)
     heartbeat.run()
 

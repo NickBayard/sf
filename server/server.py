@@ -13,7 +13,7 @@ class Handler(BaseRequestHandler):
         BaseRequestHandler.__init__(self, request, client_address, server)
 
     def handle(self):
-        re_obj = re.compile('(\d+):::')
+        re_obj = re.compile(':::(\d+):::')
         data = ''
         while True:
             new_message = True
@@ -77,11 +77,9 @@ class Server(MultiprocessMixin, TCPServer):
         self.manager = multiprocessing.Manager()
         self.message_queue = self.manager.Queue()
         self.log = configure_logging(log_level, 'Server')
-        self.start_watching_queue()
 
-    def start_watching_queue(self):
-        t = threading.Thread(target=self.watch_queue)
-        t.start()
+        self.thread = threading.Thread(target=self.watch_queue)
+        self.thread.start()
 
     def watch_queue(self):
         while True:

@@ -2,7 +2,6 @@
 
 import os
 import time
-import socket
 import cPickle as pickle
 from datetime import datetime
 from threading import Thread, Event
@@ -15,17 +14,14 @@ class StorageHeartbeat(object):
     HEARTBEAT_KILL_TIMEOUT = 10
 
     def __init__(self, consumers, monitor, report_in, runtime,
-                 poll_period, server, log_level='INFO'):
+                 poll_period, client_socket, log_level='INFO'):
         self.consumers = consumers
         self.monitor = monitor
         self.report_in = report_in
         self.runtime = runtime
         self.poll_period = poll_period
+        self.socket = client_socket
         self.log = configure_logging(log_level, 'Client')
-        self.server = server
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.log.info("Connecting to {}".format(self.server))
-        self.socket.connect(self.server)
 
     def _log_message_received(self, message):
         self.log.info('Message received from {}_{}: {}'.format(message.name,
@@ -36,13 +32,23 @@ class StorageHeartbeat(object):
         self.log.info('Message sent to {}_{}: {}'.format(process.name,
                                                          process.id,
                                                          repr(message)))
-    def _handle_heartbeat(self, responses, missing):
-        pass
 
-    def _handle_kill(self, responses, missing):
-        pass
+    def _send_message_to_server(self, message):
+        # pickle the message into a string and send to the server
+        # Not secure but sufficient for our purposes
+        ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
 
-    def _poll_processes(self, message, timeout, response_type, handler):
+        # Add a simple prefix to our message indicating the length that the
+        # server should expect.  This allows us to leave the socket open for
+        # all messages
+        ps_message = ':::{}:::{}'.format(len(ps_message), ps_message)
+        try:
+            self.socket.sendall(ps_message)
+        except socket.error
+            # Server socket seems to have gone away.  Abort
+            self.kill.set()
+
+    def _poll_processes(self, message, timeout, response_type):
         #Send the message to the monitor and all consumers
         self.monitor.pipe.send(message)
         self._log_message_sent(message, self.monitor.process)
@@ -81,12 +87,20 @@ class StorageHeartbeat(object):
 
             missing_responses = processes - responding_processes
 
-        handler(responses, missing_responses)
+        message = Message(name='Heartbeat',
+                          id=0,
+                          date_time=datetime.now(),
+                          type=response_type,
+                          payload=(responses, missing_responses))
+        self._send_message_to_server(message)
+        self.log.info('Message send to server: {}'.format(repr(message)))
 
     def _do_heartbeat(self):
         heartbeat_stop = time.time() + self.runtime
 
-        while time.time() < heartbeat_stop:
+        # Stop running if the kill event is set or if we've been running
+        # for specified runtime
+        while time.time() < heartbeat_stop and not self.kill.is_set():
             poll_start_time = time.time()
 
             # Send out heartbeat requests
@@ -98,8 +112,7 @@ class StorageHeartbeat(object):
 
             self._poll_processes(message=message,
                                  timeout=self.HEARTBEAT_RESPONSE_TIMEOUT,
-                                 response_type='HEARTBEAT',
-                                 handler=self._handle_heartbeat)
+                                 response_type='HEARTBEAT')
 
             # Subtract the elapsed time from the poll_period for
             # more accurate heartbeat intervals
@@ -117,21 +130,7 @@ class StorageHeartbeat(object):
 
         self._poll_processes(message=message,
                              timeout=self.HEARTBEAT_KILL_TIMEOUT,
-                             response_type='STOP',
-                             handler=self._handle_kill)
-
-    def _process_message(self, message):
-        self._log_message_received(message)
-
-        # pickle the message into a string and send to the server
-        # Not secure but sufficient for our purposes
-        ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
-
-        # Add a simple prefix to our message indicating the length that the
-        # server should expect.  This allows us to leave the socket open for
-        # all messages
-        ps_message = str(len(ps_message)) + ':::' + ps_message
-        self.socket.sendall(ps_message)
+                             response_type='STOP')
 
     def _process_message_queue(self):
         while not self.kill.is_set():
@@ -142,7 +141,8 @@ class StorageHeartbeat(object):
                 except Empty:
                     break
 
-                self._process_message(message)
+                self._log_message_received(message)
+                self._send_message_to_server(message)
 
         # Kill event was set. Finish processing the remaining events in the queue
         while not self.report_in.empty():
@@ -151,7 +151,8 @@ class StorageHeartbeat(object):
             except Empty:
                 break # We shouldn't ever get here
 
-            self._process_message(message)
+            self._log_message_received(message)
+            self._send_message_to_server(message)
 
     def run(self):
         self.kill = Event() # This signals _process_message_queue to finish up
