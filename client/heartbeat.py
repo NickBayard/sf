@@ -3,6 +3,7 @@
 import os
 import time
 import cPickle as pickle
+from socket import error as SocketError
 from datetime import datetime
 from threading import Thread, Event
 from Queue import Empty
@@ -44,7 +45,7 @@ class StorageHeartbeat(object):
         ps_message = ':::{}:::{}'.format(len(ps_message), ps_message)
         try:
             self.socket.sendall(ps_message)
-        except socket.error
+        except SocketError:
             # Server socket seems to have gone away.  Abort
             self.kill.set()
 

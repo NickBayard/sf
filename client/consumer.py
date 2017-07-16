@@ -4,12 +4,15 @@ import os
 import os.path
 import subprocess
 from datetime import datetime
+from collections import namedtuple
 
 from process import StorageObject
 from shared import Message
 
 class StorageConsumer(StorageObject):
-    # TODO  Add parameter for consumer file path
+
+    RolloverPayload = namedtuple('RolloverPayload', 'path size chunk')
+
     def __init__(self, id, chunk_size, file_size, heartbeat, report,
                  name=None, path='.'):
         super(StorageConsumer, self).__init__(id=id,
@@ -68,11 +71,15 @@ class StorageConsumer(StorageObject):
                     f.write(os.urandom(self.chunk_size))
 
             # Finished writing file, send rollover message
+            payload = RolloverPayload(path=filepath,
+                                      size=os.path.getsize(filepath),
+                                      chunk=self.chunk_size)
+
             self.report.put(Message(name=self.name,
                                     id=self.id,
                                     date_time=datetime.now(),
                                     type='ROLLOVER',
-                                    payload=filepath))
+                                    payload=payload))
 
             file_num += 1
 
