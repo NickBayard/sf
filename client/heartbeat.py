@@ -4,6 +4,7 @@ import os
 import time
 import socket
 import cPickle as pickle
+from datetime import datetime
 from threading import Thread, Event
 from Queue import Empty
 
@@ -60,14 +61,14 @@ class StorageHeartbeat(object):
 
             if self.monitor.pipe.poll():
                 response = self.monitor.pipe.recv()
-                self._log_message_received(message)
+                self._log_message_received(response)
                 if response.type == response_type:
                     responses.append(response)
 
             for consumer in self.consumers:
                 if consumer.pipe.poll():
                     response = consumer.pipe.recv()
-                    self._log_message_received(message)
+                    self._log_message_received(response)
                     if response.type == response_type:
                         responses.append(response)
 

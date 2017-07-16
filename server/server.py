@@ -66,7 +66,6 @@ class MultiprocessMixin:
         p = multiprocessing.Process(target = self.process_request_process,
                              args = (request, client_address))
         p.start()
-        p.join()
 
 class Server(MultiprocessMixin, TCPServer):
     allow_reuse_address = True
@@ -85,5 +84,8 @@ class Server(MultiprocessMixin, TCPServer):
         t.start()
 
     def watch_queue(self):
-        message = self.message_queue.get()
-        # TODO process message
+        while True:
+            client, message = self.message_queue.get()
+            self.log.info("client {} : {}".format(client, message))
+            # TODO process message
+            # Look for kill message from a client and kill its handler process
