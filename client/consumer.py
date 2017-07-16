@@ -9,9 +9,15 @@ from collections import namedtuple
 from process import StorageObject
 from shared import Message
 
+class RolloverPayload(object):
+    def __init__(self, path, size, chunk):
+        self.path = path
+        self.size = size
+        self.chunk = chunk
+
+
 class StorageConsumer(StorageObject):
 
-    RolloverPayload = namedtuple('RolloverPayload', 'path size chunk')
 
     def __init__(self, id, chunk_size, file_size, heartbeat, report,
                  name=None, path='.'):

@@ -7,9 +7,27 @@ from Queue import Queue
 from shared import configure_logging
 from SocketServer import TCPServer, BaseRequestHandler
 
+class ClientData(object):
+    def __init__(self, address, request, manager, request_function, queue_function):
+        # This queue will be used by the connection request handler to queue up
+        # received messages
+        self.message_queue =  manager.Queue()
+
+        # Start a process to handle the new socket connection
+        self.handling_process = multiprocessing.Process(target=request_function,
+                                                        args=(request, address, self.message_queue))
+        self.handling_process.start()
+
+        # Start a thread to process the queued messages
+        self.queue_thread = threading.Thread(target=queue_function, args=(address, ))
+        self.queue_thread.start()
+
+        self.messages = []
+
 class Handler(BaseRequestHandler):
-    def __init__(self, request, client_address, server):
+    def __init__(self, request, client_address, server, message_queue):
         self.log = server.log
+        self.message_queue = message_queue
         BaseRequestHandler.__init__(self, request, client_address, server)
 
     def handle(self):
@@ -50,58 +68,61 @@ class Handler(BaseRequestHandler):
 
     def send_message(self, message):
         message = pickle.loads(message)
-        self.server.message_queue.put((self.client_address, message))
+        self.message_queue.put(message)
 
 class MultiprocessMixin:
-    def process_request_process(self, request, client_address):
+    def request_process(self, request, client_address, message_queue):
         try:
-            self.finish_request(request, client_address)
+            self.finish_request(request, client_address, message_queue)
             self.shutdown_request(request)
         except:
             self.handle_error(request, client_address)
             self.shutdown_request(request)
 
     def process_request(self, request, client_address):
-        """Start a new thread to process the request."""
-        p = multiprocessing.Process(target = self.process_request_process,
-                             args = (request, client_address))
-        p.start()
+        self.clients[client_address] = ClientData(address=client_address,
+                                                  request=request,
+                                                  manager=self.manager,
+                                                  request_function=self.request_process,
+                                                  queue_function=self.watch_queue)
 
 class Server(MultiprocessMixin, TCPServer):
     allow_reuse_address = True
-    
-    message_dispatch = { 'HEARTBEAT'    : handle_aggregate_response,
-                         'START'        : handle_start,
-                         'STOP'         : handle_stop,
-                         'ROLLOVER'     : handle_rollover,
-                         'MONITOR'      : handle_monitor,
-                         'MONITOR_ERROR': handle_monitor }
 
     def __init__(self, log_level, server_address, RequestHandlerClass):
         TCPServer.__init__(self,
                            server_address=server_address,
                            RequestHandlerClass=RequestHandlerClass)
         self.manager = multiprocessing.Manager()
-        self.message_queue = self.manager.Queue()
         self.log = configure_logging(log_level, 'Server')
 
-        self.kill = threading.Event()
-        self.thread = threading.Thread(target=self.watch_queue)
-        self.thread.start()
-        self.client_messages = {}
+        self.clients = {}
 
-    def watch_queue(self):
-        while not self.kill.is_set():
-            client, message = self.message_queue.get()
+    def finish_request(self, request, client_address, message_queue):
+        self.RequestHandlerClass(request, client_address, self, message_queue)
+
+    def watch_queue(self, client_address):
+        message_dispatch = { 'HEARTBEAT'    : self.handle_aggregate_response,
+                             'START'        : self.handle_start,
+                             'STOP'         : self.handle_stop,
+                             'ROLLOVER'     : self.handle_rollover,
+                             'MONITOR'      : self.handle_monitor,
+                             'MONITOR_ERROR': self.handle_monitor }
+
+        client = self.clients.get(client_address, None)
+        if client is None:
+            return # Shouldn't get here
+
+        while True:
+            message = client.message_queue.get()
 
             # Handle each type of message
             dispatch_string = message_dispatch[message.type](message)
             self.log.info("Received {} from client @ {}{}".format(message.type,
-                                                                  client,
+                                                                  client_address,
                                                                   dispatch_string))
 
-            # Aggregate messages per client for report generation
-            self.client_messages.setdefault(client, []).append(message)
+            client.messages.append(message)
 
     def handle_aggregate_response(self, message):
         no_response_string = ''
@@ -116,7 +137,7 @@ class Server(MultiprocessMixin, TCPServer):
         return no_response_string
 
     def handle_stop(self, message):
-        return handle_aggregate_response(message)
+        return self.handle_aggregate_response(message)
 
     def handle_start(self, message):
         return ''
@@ -136,6 +157,6 @@ class Server(MultiprocessMixin, TCPServer):
                                                  message.payload.pid)
         data = 'mem {}, cpu {}, time {}'.format(message.payload.mem,
                                                 message.payload.cpu,
-                                                message.paylaod.etime)
+                                                message.payload.etime)
 
         return '; {} monitoring {} {}'.format(monitor_name, child_process, data)
