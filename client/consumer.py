@@ -7,7 +7,7 @@ from datetime import datetime
 from collections import namedtuple
 
 from process import StorageObject
-from shared import Message
+from shared import Message, init_dir_path
 
 class RolloverPayload(object):
     def __init__(self, path, size, chunk):
@@ -27,26 +27,7 @@ class StorageConsumer(StorageObject):
                                               name=name)
         self.chunk_size = chunk_size * 1000000
         self.file_size = file_size * 1000000
-        self.path = self._init_path(path)
-
-    def _init_path(self, path):
-        # Expand home directory '~'
-        path = os.path.expanduser(path)
-
-        # Expand current/up directory './..'
-        path = os.path.abspath(path)
-
-        # Were we given a file or directory name
-        base, ext = os.path.splitext(path)
-        if ext:  #Yup we got a file when expecting a directory
-            # Let's not fail just yet.  Strip the file and use the
-            # base directory as our path
-            path = os.path.dirname(path)
-
-        if not os.path.exists(path):
-            os.mkdir(path)
-
-        return path
+        self.path = init_dir_path(path)
 
     def run(self):
         # Report that this consumer had started running

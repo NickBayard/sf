@@ -22,8 +22,12 @@ def main(config):
     # listen on config.port for connection requests.  Each request will
     # be given its own handler process.
     server_address = (config.host, config.port)
-    server = Server(config.log_level, server_address, Handler)
+    server = Server(log_level=config.log_level,
+                    server_address=server_address,
+                    RequestHandlerClass=Handler,
+                    report_path=config.report_path)
     server.serve_forever()
+    server.cleanup()
 
 def update_config(config, args):
     config.port = args.port if args.port is not None else config.port

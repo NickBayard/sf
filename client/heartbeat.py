@@ -49,7 +49,7 @@ class StorageHeartbeat(object):
             # Server socket seems to have gone away.  Abort
             self.kill.set()
 
-    def _poll_processes(self, message, timeout, response_type):
+    def _poll_processes(self, message, timeout, response_type, wait_to_send=None):
         #Send the message to the monitor and all consumers
         self.monitor.pipe.send(message)
         self._log_message_sent(message, self.monitor.process)
@@ -87,6 +87,9 @@ class StorageHeartbeat(object):
             processes.add((self.monitor.process.name, self.monitor.process.id))
 
             missing_responses = processes - responding_processes
+
+        #if wait_to_send is not None:
+            #wait_to_send.wait()
 
         message = Message(name='Heartbeat',
                           id=0,
@@ -131,32 +134,38 @@ class StorageHeartbeat(object):
 
         self._poll_processes(message=message,
                              timeout=self.HEARTBEAT_KILL_TIMEOUT,
-                             response_type='STOP')
+                             response_type='STOP',
+                             wait_to_send=self.queue_empty)
 
     def _process_message_queue(self):
         while not self.kill.is_set():
-            # We just need a block to break from if an Empty exception occurs
-            for _ in [None]:
-                try:
-                    message = self.report_in.get(block=True, timeout=2)
-                except Empty:
-                    break
+            try:
+                message = self.report_in.get(timeout=2)
+            except Empty:
+                continue
 
-                self._log_message_received(message)
-                self._send_message_to_server(message)
+            self._log_message_received(message)
+            self._send_message_to_server(message)
 
         # Kill event was set. Finish processing the remaining events in the queue
         while not self.report_in.empty():
             try:
-                message = self.report_in.get()
+                message = self.report_in.get(block=False)
             except Empty:
                 break # We shouldn't ever get here
 
             self._log_message_received(message)
             self._send_message_to_server(message)
 
+        self.queue_empty.set()
+
     def run(self):
         self.kill = Event() # This signals _process_message_queue to finish up
+
+        # Event used to delay sending STOP message to server until all messages
+        # in the queue have been handled
+        self.queue_empty = Event()
+
         t = Thread(target=self._process_message_queue)
         t.start()
 
@@ -166,6 +175,8 @@ class StorageHeartbeat(object):
         self._kill_all()
 
         # Finish processing remaining messages from child processes
+        self.log.info("setting hb kill")
         self.kill.set()
         t.join()
+
         self.socket.close()
