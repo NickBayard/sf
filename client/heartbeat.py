@@ -88,8 +88,11 @@ class StorageHeartbeat(object):
 
             missing_responses = processes - responding_processes
 
-        #if wait_to_send is not None:
-            #wait_to_send.wait()
+        if wait_to_send is not None:
+            # Signal message queue to finish processing
+            self.kill.set()
+            # Wait until message queue is empty
+            wait_to_send.wait()
 
         message = Message(name='Heartbeat',
                           id=0,
@@ -175,8 +178,6 @@ class StorageHeartbeat(object):
         self._kill_all()
 
         # Finish processing remaining messages from child processes
-        self.log.info("setting hb kill")
-        self.kill.set()
         t.join()
 
         self.socket.close()

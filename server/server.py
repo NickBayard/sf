@@ -216,11 +216,11 @@ class Server(MultiprocessMixin, TCPServer):
 
         with open(filepath, 'w') as file:
             for address, client in self.clients.iteritems():
-                file.write('Client @ {}:{}'.format(address[0], address[1]))
+                file.write('Client @ {}:{}\n'.format(address[0], address[1]))
 
                 for message in client.messages:
-                    file.write(repr(message))
+                    file.write(repr(message) + '\n')
 
                 file.write('\n')
 
-            file.write('EOF')
+            file.write('EOF\n')
