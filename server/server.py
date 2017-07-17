@@ -74,6 +74,9 @@ class Handler(BaseRequestHandler):
     def send_message(self, message):
         message = pickle.loads(message)
         self.message_queue.put(message)
+        # This is a hack to keep this process alive
+        with open('/dev/null', 'w') as f:
+            f.write("message added to queue {}".format(message))
 
 
 class MultiprocessMixin:

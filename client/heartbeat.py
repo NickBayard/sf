@@ -100,7 +100,7 @@ class StorageHeartbeat(object):
                           type=response_type,
                           payload=(responses, missing_responses))
         self._send_message_to_server(message)
-        self.log.info('Message send to server: {}'.format(repr(message)))
+        self.log.info('Message sent to server: {}'.format(repr(message)))
 
     def _do_heartbeat(self):
         heartbeat_stop = time.time() + self.runtime

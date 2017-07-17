@@ -7,6 +7,4 @@ env/
 *.log
 log
 
-Makefile
-
 tags
