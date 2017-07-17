@@ -6,7 +6,7 @@ class Message(object):
        process and threads over sockets, pipes and queues.'''
 
     def __init__(self, name, date_time, type, payload=None, id=0):
-        ''' Initializes a Message with:
+        '''Initializes a Message with:
            
             Args:
                 name: A string name of the sender.
@@ -24,7 +24,11 @@ class Message(object):
         self.payload = payload
 
     def __repr__(self):
-        '''Provides a repr() implementation for Message.'''
+        '''Provides a repr() implementation for Message.
+        
+            Returns:
+                A repr string for Message.
+        '''
         repr_string = '{}('.format(self.__class__.__name__)
         repr_string += 'date_time={}, '.format(self.date_time)
         repr_string += 'name={}, '.format(self.name)

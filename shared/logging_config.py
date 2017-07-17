@@ -4,8 +4,8 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 
 def configure_logging(log_level, name):
-    ''' Creates a logging instance with a TimedRotatingFileHandler and
-        a StreamHandler.
+    '''Creates a logging instance with a TimedRotatingFileHandler and
+       a StreamHandler.
 
         Args:
             log_level: A string matching the logging level.

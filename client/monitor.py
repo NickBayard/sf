@@ -1,4 +1,4 @@
-'''Enter module docstring here'''
+'''Contains the definition for the StorageMonitor class.'''
 
 import os
 import time
@@ -10,17 +10,34 @@ from datetime import datetime
 from process import StorageObject
 from shared import Message
 
+
 class MonitorData(object):
+    '''MonitorData is a container for processes that are monitored by
+       StorageMonitor.  It is designed to be pickled and send as a
+       Message payload.
+    '''
 
     def __init__(self, process):
+        '''Initializes a MonitorData with:
+
+            Args:
+                process: A multiprocessing.Process instance
+        '''
         self.id = process.id
         self.pid = process.pid
         self.name = process.name
+
+        # These will be populated later as the monitor runs
         self.cpu = None
         self.mem = None
         self.etime = None
 
     def __repr__(self):
+        '''Provides a repr() implementation for MonitorData.
+            
+            Returns:
+                A repr string for MonitorData.
+        '''
         repr_string = '{}('.format(self.__class__.__name__)
         repr_string += 'id={}, '.format(self.id)
         repr_string += 'pid={}, '.format(self.pid)
@@ -32,8 +49,30 @@ class MonitorData(object):
         return repr_string
 
 class StorageMonitor(StorageObject):
+    '''The StorageMonitor periodically polls some status information
+       from one or more StorageConsumer instances on this client.
+
+       StorageMonitor inherits from StorageObject, which makes it a
+       multiprocessing process.
+
+       Monitoring events are sent over the "report" queue.
+
+       KILL messages received on the "heartbeat" pipe force the process
+       to stop. These messages are polled once per second.
+    '''
 
     def __init__(self, processes, id, heartbeat, report, poll_period, name=None):
+        '''Initializes a StorageMonitor with:
+
+            Args:
+                processes: An interable of multiprocessing.Process objects
+                id: An integer index for objects that have multiple instances.
+                heartbeat: A Pipe used to communicate with its master process.
+                report: A queue for sending status messages to its master.
+                poll_period: Interval (s) on which StorageMonitor should poll
+                    the StorageConsumers for their status information.
+                name: A string name of the process.
+        '''
         super(StorageMonitor, self).__init__(id=id,
                                              heartbeat=heartbeat,
                                              report=report,
@@ -41,7 +80,15 @@ class StorageMonitor(StorageObject):
         self.processes = [MonitorData(p) for p in processes]
         self.poll_period = poll_period
 
-    def monitor_error(self, process):
+    def _monitor_error(self, process):
+        '''Called whenever the monitor incounters an error retrieving the
+           status of a consumer process. Sends a message to StorageHeartbeat
+           indcating the error.
+           
+            Args:
+                process: The MonitorData object of the process that caused
+                    the error.
+        '''
         self.report.put(Message(name=self.name,
                                 id=self.id,
                                 date_time=datetime.now(),
@@ -49,38 +96,46 @@ class StorageMonitor(StorageObject):
                                 payload=process))
 
     def run(self):
-        # Report that monitor has started running
+        '''Overridden from StorageObject and multiprocessing.Process
+        
+           run() contains the task that will be run in this process.'''
+
+        # Report that this monitor has started running
         self.report.put(Message(name=self.name,
                                 id=self.id,
                                 date_time=datetime.now(),
                                 type='START',
                                 payload=None))
 
+        # Stop when we get a KILL message from StorageHeartbeat
         while self.check_heartbeat():
             monitor_start = time.time()
 
             for process in self.processes:
+                # Use 'ps' to gather the cpu, memory, and runtime information
                 command = ['ps', '-p', str(process.pid), '-o', 'pcpu,pmem,etimes']
                 try:
                     response = subprocess.check_output(command).split(b'\n')
                 except CalledProcessError:
-                    self.monitor_error(process)
+                    self._monitor_error(process)
                     break
 
                 # Check the first line of the response for 'CPU' and 'MEM'
                 # to ensure that ps returned valid output
                 match = re.search('CPU.+MEM', response[0])
                 if match is None:
-                    self.monitor_error(process)
+                    self._monitor_error(process)
                     break
 
                 response_items = response[1].split()
                 if not len(response_items) == 3:
-                    self.monitor_error(process)
+                    self._monitor_error(process)
                     break
 
                 process.cpu, process.mem, process.etime = response_items
 
+                # Send the status information for this consumer to the 
+                # StorageHeartbeat
                 self.report.put(Message(name=self.name,
                                         id=self.id,
                                         date_time=datetime.now(),

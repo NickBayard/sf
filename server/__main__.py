@@ -1,27 +1,29 @@
 #! /usr/bin/env python2
 
-'''Enter module docstring here'''
-from __future__ import print_function
+'''Main entry point for running a Server directly via
+    python -m server
+'''
 
 import sys
 import os.path
 import argparse
-
-from . import __version__
-from .server import Server
-from .handler import Handler
-from .config import ServerConfig
 
 try:
     import yaml
 except ImportError:
     sys.exit("PyYaml module not present.  Please run 'pip install pyyaml'")
 
+from . import __version__
+from .server import Server
+from .handler import Handler
+from .config import ServerConfig
+
 
 def main(config):
-    # This server will bind to all available interfaces on this machine and
-    # listen on config.port for connection requests.  Each request will
-    # be given its own handler process.
+    '''The main entry point when running a Server instance.'''
+
+    # This server will bind to server_address and listen for connection
+    # requests.  Each connection handler will be given its own process.
     server_address = (config.host, config.port)
     server = Server(log_level=config.log_level,
                     server_address=server_address,
@@ -31,12 +33,29 @@ def main(config):
     server.cleanup()
 
 def update_config(config, args):
+    '''Override ServerConfig with command line arguments when provided.
+    
+        Args:
+            config: The ServerConfig instance.
+            args: dict of command line arguments.
+            
+        Returns:
+            Modifed ServerConfig overridden by command line arguments.
+    '''
     config.port = args.port if args.port is not None else config.port
 
     config.log_level = args.log_level if args.log_level is not None \
         else config.log_level
 
 def get_config(args):
+    '''Imports a ServerConfig instance from the server configuration file.
+        
+        Args:
+            args: dict of command line arguments.
+
+        Returns:
+            A ServerConfig instance.
+    '''
     if not os.path.exists(args.config_path) or \
         not os.path.isfile(args.config_path):
         sys.exit('Path {} doesn\'t exist'.format(args.config_path))
@@ -50,6 +69,11 @@ def get_config(args):
     return config
 
 def get_command_line_args():
+    '''Sets up argparse arguments and parses the command line arguments.
+        
+        Returns:
+            A dict of command line arguments.
+    '''
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--config-file', dest='config_path',
@@ -71,5 +95,5 @@ def get_command_line_args():
     return parser.parse_args()
 
 if __name__ == '__main__':
+    # Gather config file and command line arguments and sent to main()
     main(get_config(get_command_line_args()))
-

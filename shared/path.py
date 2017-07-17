@@ -4,8 +4,8 @@ import os
 import os.path
 
 def init_dir_path(path):
-    ''' Returns an existing absolute directory with files stripped
-        if necessary.
+    '''Returns an existing absolute directory with files stripped
+       if necessary.
 
         Args:
             path: A string directory path. File paths will have the

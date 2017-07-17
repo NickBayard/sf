@@ -1,8 +1,11 @@
-'''Enter module docstring here'''
+'''Contains the ClientConfig definition.'''
 
 import yaml
 
 class ClientConfig(yaml.YAMLObject):
+    ''' This class pairs with a yaml file for the client configuration.
+        The file will be loaded and converted into an instance of this.'''
+
     yaml_tag = u'!ClientConfig'
 
     def __init__(self,
@@ -17,7 +20,22 @@ class ClientConfig(yaml.YAMLObject):
                  monitor_poll_period,
                  runtime,
                  log_level):
-
+        '''Initializes a ClientConfig with:
+            
+            Args:
+                host: The server ip.
+                host_port: The server port.
+                storage_path: Path to save consumer files.
+                storage_count: Number of consumer instances.
+                default_chunk_size: Size of chunks to write to file.
+                default_file_size: Total size of file before rolling over.
+                chunk_sizes: List of chunk sizes for each storage consumer instance.
+                file_sizes: List of file sizes for each storage consumer instance.
+                monitor_poll_period: Period for monitor to poll consumer process info.
+                runtime: Client runtime before shutting down.
+                log_level: A string matching the logging level.
+                    (e.g. DEBUG, INFO, WARNING)
+        '''
         self.host = host
         self.host_port = host_port
         self.storage_path = storage_path
@@ -32,6 +50,11 @@ class ClientConfig(yaml.YAMLObject):
         self.log_level = log_level
 
     def __repr__(self):
+        '''Provides a repr() implementation for ClientConfig.
+            
+            Returns:
+                A repr string for ClientConfig.
+        '''
         repr_string = '%s(' % (self.__class__.__name__)
 
         repr_string += 'host=%r, ' % (self.host)
