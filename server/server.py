@@ -1,13 +1,15 @@
+'''Docstring'''
+
 import os.path
-import re
-import cPickle as pickle
 import threading
 import multiprocessing
 from Queue import Queue, Empty
 from datetime import datetime
 
 from shared import configure_logging, init_dir_path
-from SocketServer import TCPServer, BaseRequestHandler
+from SocketServer import TCPServer
+
+from handler import Handler
 
 class ClientData(object):
     def __init__(self, address, request, manager, request_function, queue_function):
@@ -28,55 +30,6 @@ class ClientData(object):
         self.messages = []
 
         self.done = False  # Track the status of each client connection
-
-class Handler(BaseRequestHandler):
-    def __init__(self, request, client_address, server, message_queue):
-        self.log = server.log
-        self.message_queue = message_queue
-        BaseRequestHandler.__init__(self, request, client_address, server)
-
-    def handle(self):
-        re_obj = re.compile(':::(\d+):::')
-        data = ''
-        while True:
-            new_message = True
-            size = 0
-            message = ''
-            while True:
-                data += self.request.recv(1024)
-                if not data:
-                    return
-
-                if new_message:
-                    match = re_obj.match(data)
-                    if match:
-                        new_message = False
-                        size = int(match.group(1))
-                        offset = len(match.group(0))
-                        data = data[offset:]
-                    else:
-                        break
-
-                remaining = size - len(message)
-                if len(data) > remaining:
-                    # Need to truncate data to get right message length
-                    message += data[:remaining]
-                    data = data[remaining:]
-                else:
-                    message += data
-                    data = ''
-
-                if len(message) == size:
-                    self.send_message(message)
-                    break
-                # else need to collect more data
-
-    def send_message(self, message):
-        message = pickle.loads(message)
-        self.message_queue.put(message)
-        # This is a hack to keep this process alive
-        with open('/dev/null', 'w') as f:
-            f.write("message added to queue {}".format(message))
 
 
 class MultiprocessMixin:
@@ -188,10 +141,10 @@ class Server(MultiprocessMixin, TCPServer):
         return ''
 
     def handle_rollover(self, message, client):
-        return '; {}_{} {}/{} chunks - {}'.format(message.name,
+        return '; {}_{} {}MB/{}MB chunks - {}'.format(message.name,
                                                   message.id,
-                                                  message.payload.size,
-                                                  message.payload.chunk,
+                                                  message.payload.size / int(1e6),
+                                                  message.payload.chunk / int(1e6),
                                                   message.payload.path)
 
     def handle_monitor(self, message, client):

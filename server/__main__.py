@@ -8,7 +8,8 @@ import os.path
 import argparse
 
 from . import __version__
-from .server import Server, Handler
+from .server import Server
+from .handler import Handler
 from .config import ServerConfig
 
 try:
