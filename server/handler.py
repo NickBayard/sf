@@ -14,7 +14,7 @@ class Handler(BaseRequestHandler):
 
     def __init__(self, request, client_address, server, message_queue):
         '''Initializes a Handler with:
-        
+
             Args:
                 request: A socket request object.
                 client_address: A tuple containing the client ip/port.

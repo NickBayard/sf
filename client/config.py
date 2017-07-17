@@ -21,7 +21,7 @@ class ClientConfig(yaml.YAMLObject):
                  runtime,
                  log_level):
         '''Initializes a ClientConfig with:
-            
+
             Args:
                 host: The server ip.
                 host_port: The server port.
@@ -51,7 +51,7 @@ class ClientConfig(yaml.YAMLObject):
 
     def __repr__(self):
         '''Provides a repr() implementation for ClientConfig.
-            
+
             Returns:
                 A repr string for ClientConfig.
         '''

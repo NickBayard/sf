@@ -26,13 +26,13 @@ class ClientData(object):
             message_queue: A "managed" queue for the handling_process
                 to forward Messages back to the queue_thread.
 
-            messages: A list of messages that have been processed by 
+            messages: A list of messages that have been processed by
                 queue_thread.
 
             kill: A "managed" Event that lets the server stop processes
                 and threads from running.
 
-            done: A flag indicating if the handling_process and 
+            done: A flag indicating if the handling_process and
                 queue_thread are running.
     '''
 
@@ -53,7 +53,7 @@ class ClientData(object):
         # This queue will be used by the connection request handler to queue up
         # received messages.
         self.message_queue = manager.Queue()
-            
+
         # This event will be used to stop running processes and threads for
         # this connection.
         self.kill = manager.Event()
@@ -71,7 +71,7 @@ class ClientData(object):
         self.messages = []
 
         # Track the status of each client connection
-        self.done = False  
+        self.done = False
 
 
 class MultiprocessMixin:
@@ -81,9 +81,9 @@ class MultiprocessMixin:
        child process.
     '''
     def request_process(self, request, client_address, message_queue):
-        '''Overrides TCPServer.request_process in order to pass the 
+        '''Overrides TCPServer.request_process in order to pass the
            message_queue to the handler.
-           
+
            This function gets run on a new process to handle the connetion
            request.
 
@@ -147,7 +147,7 @@ class Server(MultiprocessMixin, TCPServer):
 
     def __init__(self, log_level, server_address, RequestHandlerClass, report_path):
     '''Initialize a Server with:
-        
+
         Args:
             log_level: A string matching the logging level.
                 (e.g. DEBUG, INFO, WARNING)
@@ -330,7 +330,7 @@ class Server(MultiprocessMixin, TCPServer):
     def _are_all_clients_done(self):
         '''Iterate through clients to determine if they are all done.
 
-            Returns: 
+            Returns:
                 False if any of the clients are not done else True
         '''
         for client in self.clients.itervalues():

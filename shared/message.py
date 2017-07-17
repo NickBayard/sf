@@ -7,13 +7,13 @@ class Message(object):
 
     def __init__(self, name, date_time, type, payload=None, id=0):
         '''Initializes a Message with:
-           
+
             Args:
                 name: A string name of the sender.
                 id: An integer index for objects that have multiple instances.
                 date_time: None or a datetime object indicating the time sent.
                 type: A string indicating the type of message sent.
-                      NOTE: An enum would be less error prone, but would 
+                      NOTE: An enum would be less error prone, but would
                       require either installing enum34.
                 payload: The message contents, which vary by type.
         '''
@@ -25,7 +25,7 @@ class Message(object):
 
     def __repr__(self):
         '''Provides a repr() implementation for Message.
-        
+
             Returns:
                 A repr string for Message.
         '''

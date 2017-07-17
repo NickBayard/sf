@@ -31,4 +31,3 @@ def init_dir_path(path):
         os.mkdir(path)
 
     return path
-

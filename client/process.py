@@ -12,7 +12,7 @@ class StorageObject(multiprocessing.Process):
 
     def __init__(self, id, heartbeat, report, name=None):
         '''Initializes StorageObject with:
-            
+
             Args:
                 id: An integer index for objects that have multiple instances.
                 heartbeat: A Pipe used to communicate with its master process.

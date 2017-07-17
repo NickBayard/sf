@@ -13,7 +13,7 @@ class RolloverPayload(object):
     '''The RolloverPayload class is used as a container for the
        Message.payload sent to the Heartbeat process.  Though a
        namedtuple could be used here because the contents are no
-       longer modified, this object needs to be pickled to be 
+       longer modified, this object needs to be pickled to be
        forwarded to the server.
     '''
 
@@ -69,7 +69,7 @@ class StorageConsumer(StorageObject):
 
     def run(self):
         '''Overridden from StorageObject and multiprocessing.Process
-        
+
            run() contains the task that will be run in this process.'''
 
         # Report that this consumer has started running

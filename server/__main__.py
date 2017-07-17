@@ -34,11 +34,11 @@ def main(config):
 
 def update_config(config, args):
     '''Override ServerConfig with command line arguments when provided.
-    
+
         Args:
             config: The ServerConfig instance.
             args: dict of command line arguments.
-            
+
         Returns:
             Modifed ServerConfig overridden by command line arguments.
     '''
@@ -49,7 +49,7 @@ def update_config(config, args):
 
 def get_config(args):
     '''Imports a ServerConfig instance from the server configuration file.
-        
+
         Args:
             args: dict of command line arguments.
 
@@ -70,7 +70,7 @@ def get_config(args):
 
 def get_command_line_args():
     '''Sets up argparse arguments and parses the command line arguments.
-        
+
         Returns:
             A dict of command line arguments.
     '''

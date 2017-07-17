@@ -12,8 +12,8 @@ from shared import Message, configure_logging
 class StorageHeartbeat(object):
     '''The StorageHeartbeat runs on the parent process of the client instance.
        It acts as the master to the StorageConsumer and StorageMonitor
-       instances.  
-       
+       instances.
+
        Communication of task status from all children is done
        via a multiprocessing.Queue.  Additionally, there is a multiprocessing.Pipe
        connected to each child process for sending HEARTBEAT and KILL requests.
@@ -27,7 +27,7 @@ class StorageHeartbeat(object):
 
     # (seconds) HEARTBEAT requests to child process must be reponded to within
     # this amout of time.
-    HEARTBEAT_RESPONSE_TIMEOUT = 3  
+    HEARTBEAT_RESPONSE_TIMEOUT = 3
     # (seconds) KILL requests to child process must be reponded to within
     # this amout of time.
     HEARTBEAT_KILL_TIMEOUT = 10
@@ -42,7 +42,7 @@ class StorageHeartbeat(object):
                 monitor: A ProcessData object for the StorageMonitor process.
                 report_in: Queue containing all child processes status.
                 runtime: The configured runtime of the client.
-                poll_period: The interval (seconds) on which to send 
+                poll_period: The interval (seconds) on which to send
                     HEARTBEAT requests to child processes and then forward
                     the results to the server.
                 client_socket: A connected socket to the server.
@@ -59,7 +59,7 @@ class StorageHeartbeat(object):
 
     def _log_message_received(self, message):
         '''A helper method to log a message received from a child process.
-        
+
             Args:
                 message: A Message object received from a child process.
         '''
@@ -69,7 +69,7 @@ class StorageHeartbeat(object):
 
     def _log_message_sent(self, message, process):
         '''A helper method to log a message sent to a child process.
-        
+
             Args:
                 message: A Message object sent to a child process.
                 process: The Process to which the message was sent.
@@ -86,7 +86,7 @@ class StorageHeartbeat(object):
             Args:
                 message: A Message object to be sent to the server.
         '''
-        # pickle the message into a string 
+        # pickle the message into a string
         # Not secure but sufficient for our purposes
         ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
 
@@ -105,10 +105,10 @@ class StorageHeartbeat(object):
            the response messages from each.  Processes that fail to respond are
            aggregated as a list of tuple of (name, id). The process responses
            and failed response list are sent to the server.
-           
+
            This method is used by _do_heartbeat and _kill_all to prevent code
            duplication.
-           
+
             Args:
                 message: A Message object to send to all children.
                 timeout: Time (s) to wait for responses.
@@ -222,7 +222,7 @@ class StorageHeartbeat(object):
     def _process_message_queue(self):
         '''Process messages in the report_in queue.
 
-           The self.kill Event signals this thread to process the 
+           The self.kill Event signals this thread to process the
            queue until empty and then exit.
 
            This method runs as a separate background thread while

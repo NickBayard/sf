@@ -34,7 +34,7 @@ class MonitorData(object):
 
     def __repr__(self):
         '''Provides a repr() implementation for MonitorData.
-            
+
             Returns:
                 A repr string for MonitorData.
         '''
@@ -84,7 +84,7 @@ class StorageMonitor(StorageObject):
         '''Called whenever the monitor incounters an error retrieving the
            status of a consumer process. Sends a message to StorageHeartbeat
            indcating the error.
-           
+
             Args:
                 process: The MonitorData object of the process that caused
                     the error.
@@ -97,7 +97,7 @@ class StorageMonitor(StorageObject):
 
     def run(self):
         '''Overridden from StorageObject and multiprocessing.Process
-        
+
            run() contains the task that will be run in this process.'''
 
         # Report that this monitor has started running
@@ -134,7 +134,7 @@ class StorageMonitor(StorageObject):
 
                 process.cpu, process.mem, process.etime = response_items
 
-                # Send the status information for this consumer to the 
+                # Send the status information for this consumer to the
                 # StorageHeartbeat
                 self.report.put(Message(name=self.name,
                                         id=self.id,

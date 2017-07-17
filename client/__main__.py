@@ -22,7 +22,7 @@ from consumer import StorageConsumer
 from monitor import StorageMonitor
 from heartbeat import StorageHeartbeat
 
- 
+
 class ProcessData(object):
     '''A container housing a multiprocessing.Process and a
        multiprocessing.Pipe.
@@ -30,7 +30,7 @@ class ProcessData(object):
 
     def __init__(self, process, pipe):
         '''Initializes a ProcessData instance.
-            
+
             Args:
                 process: A multiprocessing.Process
                 pipe: A multiprocessing.Pipe for communicating with process
@@ -110,11 +110,11 @@ def main(config):
 
 def update_config(config, args):
     '''Override ClientConfig with command line arguments when provided.
-    
+
         Args:
             config: The ClientConfig instance.
             args: dict of command line arguments.
-            
+
         Returns:
             Modifed ClientConfig overridden by command line arguments.
     '''
@@ -153,7 +153,7 @@ def update_config(config, args):
 
 def get_config(args):
     '''Imports a ClientConfig instance from the client configuration file.
-        
+
         Args:
             args: dict of command line arguments.
 
@@ -174,7 +174,7 @@ def get_config(args):
 
 def get_command_line_args():
     '''Sets up argparse arguments and parses the command line arguments.
-        
+
         Returns:
             A dict of command line arguments.
     '''
@@ -213,4 +213,3 @@ def get_command_line_args():
 if __name__ == '__main__':
     # Gather config file and command line arguments and sent to main()
     main(get_config(get_command_line_args()))
-
