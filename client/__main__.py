@@ -10,6 +10,7 @@ import argparse
 import multiprocessing
 import socket
 import time
+import math
 
 try:
     import yaml
@@ -37,6 +38,29 @@ class ProcessData(object):
         '''
         self.process = process
         self.pipe = pipe
+
+def test_runtime(config, id):
+    '''Tests the number of files that can rollover in a given runtime by
+       timing the write for a single chunk.
+
+        Args:
+            config: A ClientConfig object containing the chunk size,
+                file_size, storage_path, and runtime.
+            id: Index of consumer to use in chunk_sizes and file_sizes.
+        Returns:
+            True if we can rollover at least 2 times else False
+    '''
+    chunk_size = config.chunk_sizes[id]
+
+    chunk_time = StorageConsumer.test_chunk_speed(chunk_size, config.storage_path)
+
+    num_chunks_per_file = math.ceil(config.file_sizes[id] / chunk_size)
+
+    time_per_file = chunk_time * num_chunks_per_file
+
+    num_files_in_runtime = math.ceil(config.runtime, time_per_file)
+
+    return num_files_in_runtime >= 2.0
 
 
 def main(config):
@@ -75,7 +99,16 @@ def main(config):
                                                 path=config.storage_path),
                         pipe=master)
 
+        # We need to test the chunk_size/runtime limits before starting up
+        if not test_runtime(config, consumer.process.id):
+            format_message = 'Runtime {} and chunk size {} for Consumer {}'.format(
+                config.runtime, config.chunk_sizes[id], id)
+            sys.exit('{} not sufficient for 2x rollover.'.format(format_message))
+
         consumers.append(consumer)
+
+    # Don't start any processes running until all chunk_sizes can be validated
+    for consumer in consumers:
         consumer.process.start()
 
     # Similar to the storage consumers, the monitor process will use this pipe

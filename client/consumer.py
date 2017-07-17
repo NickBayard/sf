@@ -120,3 +120,33 @@ class StorageConsumer(StorageObject):
                                     date_time=datetime.now(),
                                     type='STOP',
                                     payload=None))
+
+    @staticmethod
+    def test_chunk_speed(chunk_size, path):
+        '''Test the time to write a single chunk.
+
+            Args:
+                chunk_size: Size (10MB) of chunk to write.
+                path: Directory to write the temp file to.
+
+            Returns:
+                Time (s) it took to write a chunk-sized file to path.
+        '''
+        path = init_dir_path(path)
+        filepath = os.path.join(path, 'temp')
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        start = time.time()
+
+        with open(filepath, 'wb') as f:
+            f.write(os.urandom(chunk_size * 1000000)
+
+        elapsed = time.time() - start
+
+        if os.path.exists(filepath):
+            os.remove(filepath)
+
+        return elapsed
+
