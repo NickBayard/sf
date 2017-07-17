@@ -42,6 +42,8 @@ def update_config(config, args):
         Returns:
             Modifed ServerConfig overridden by command line arguments.
     '''
+    config.host = args.host if args.host is not None else config.host
+
     config.port = args.port if args.port is not None else config.port
 
     config.log_level = args.log_level if args.log_level is not None \
@@ -80,7 +82,8 @@ def get_command_line_args():
         default='server_config.yaml',
         help='File path of yaml configuration file for server.')
 
-    # TODO add host arg
+    parser.add_argument('-h', '--host',
+        help='Listening interface for the server.') 
 
     parser.add_argument('-p', '--port', type=int,
         help='Listening port for the server')
