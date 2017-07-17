@@ -1,10 +1,10 @@
 --- !ClientConfig
 host: '127.0.0.1'
-host_port: 10000
-#
+host_port: 10000  # This must match server config
+
 # Storage Consumer Config
-storage_path: './storage'
-storage_count: 1
+storage_path: './storage'  # Location to save storage consuming files
+storage_count: 1  # Number of storage consumer processes to launch
 default_chunk_size: 10  # MB
 default_file_size: 100  # MB
 # If the size of the chunk_sizes or file_sizes lists are less than the storage

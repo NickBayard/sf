@@ -1,4 +1,4 @@
-from containers import ProcessData, Message
+from message import Message
 from logging_config import configure_logging
 from path import init_dir_path
 

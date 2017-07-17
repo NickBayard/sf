@@ -1,5 +1,5 @@
 --- !ServerConfig
 host: '0.0.0.0'  # Server will listen on all available interfaces
-port: 10000
-report_path: '.'
+port: 10000  # This must match client config
+report_path: '.'  # Directory to save server report
 log_level: 'DEBUG'  #'INFO'

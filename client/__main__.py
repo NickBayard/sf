@@ -19,8 +19,12 @@ from .config import ClientConfig
 from consumer import StorageConsumer
 from monitor import StorageMonitor
 from heartbeat import StorageHeartbeat
-from shared import ProcessData
+ 
+class ProcessData(object):
 
+    def __init__(self, process, pipe):
+        self.process = process
+        self.pipe = pipe
 
 def main(config):
     # Create a single consumer (heartbeat), multiple producer queue.
