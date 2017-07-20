@@ -1,8 +1,8 @@
 #! /usr/bin/env python2
 
-'''Main entry point for running a client directly via
+"""Main entry point for running a client directly via
     python -m client
-'''
+"""
 
 import sys
 import os.path
@@ -10,7 +10,6 @@ import argparse
 import multiprocessing
 import socket
 import time
-import math
 
 try:
     import yaml
@@ -22,49 +21,27 @@ from .config import ClientConfig
 from consumer import StorageConsumer
 from monitor import StorageMonitor
 from heartbeat import StorageHeartbeat
+from shared import init_dir_path
 
 
 class ProcessData(object):
-    '''A container housing a multiprocessing.Process and a
+    """A container housing a multiprocessing.Process and a
        multiprocessing.Pipe.
-    '''
+    """
 
     def __init__(self, process, pipe):
-        '''Initializes a ProcessData instance.
+        """Initializes a ProcessData instance.
 
             Args:
                 process: A multiprocessing.Process
                 pipe: A multiprocessing.Pipe for communicating with process
-        '''
+        """
         self.process = process
         self.pipe = pipe
 
-def test_runtime(config, id):
-    '''Tests the number of files that can rollover in a given runtime by
-       timing the write for a single chunk.
-
-        Args:
-            config: A ClientConfig object containing the chunk size,
-                file_size, storage_path, and runtime.
-            id: Index of consumer to use in chunk_sizes and file_sizes.
-        Returns:
-            True if we can rollover at least 2 times else False
-    '''
-    chunk_size = config.chunk_sizes[id]
-
-    chunk_time = StorageConsumer.test_chunk_speed(chunk_size, config.storage_path)
-
-    num_chunks_per_file = math.ceil(config.file_sizes[id] / chunk_size)
-
-    time_per_file = chunk_time * num_chunks_per_file
-
-    num_files_in_runtime = math.ceil(config.runtime, time_per_file)
-
-    return num_files_in_runtime >= 2.0
-
 
 def main(config):
-    '''The main entry point when running a Client instance.'''
+    """The main entry point when running a Client instance."""
 
     # Create a single-consumer (heartbeat), multiple-producer queue.
     # The storage consumers and storage monitor processes will send their start,
@@ -100,9 +77,13 @@ def main(config):
                         pipe=master)
 
         # We need to test the chunk_size/runtime limits before starting up
-        if not test_runtime(config, consumer.process.id):
+        temp_filepath = os.path.join(consumer.process.path, 'temp')
+        if not StorageConsumer.test_runtime(runtime=config.runtime,
+                                            path=temp_filepath,
+                                            chunk_size=consumer.process.chunk_size,
+                                            file_size=consumer.process.file_size):
             format_message = 'Runtime {} and chunk size {} for Consumer {}'.format(
-                config.runtime, config.chunk_sizes[id], id)
+                config.runtime, consumer.process.chunk_size, id)
             sys.exit('{} not sufficient for 2x rollover.'.format(format_message))
 
         consumers.append(consumer)
@@ -142,7 +123,7 @@ def main(config):
         consumer.process.join()
 
 def update_config(config, args):
-    '''Override ClientConfig with command line arguments when provided.
+    """Override ClientConfig with command line arguments when provided.
 
         Args:
             config: The ClientConfig instance.
@@ -150,7 +131,7 @@ def update_config(config, args):
 
         Returns:
             Modifed ClientConfig overridden by command line arguments.
-    '''
+    """
     config.storage_count = args.storage_count if args.storage_count is not None \
         else config.storage_count
 
@@ -185,14 +166,14 @@ def update_config(config, args):
         else config.log_level
 
 def get_config(args):
-    '''Imports a ClientConfig instance from the client configuration file.
+    """Imports a ClientConfig instance from the client configuration file.
 
         Args:
             args: dict of command line arguments.
 
         Returns:
             A ClientConfig instance.
-    '''
+    """
     if not os.path.exists(args.config_path) or \
         not os.path.isfile(args.config_path):
         sys.exit('Path {} doesn\'t exist'.format(args.config_path))
@@ -206,11 +187,11 @@ def get_config(args):
     return config
 
 def get_command_line_args():
-    '''Sets up argparse arguments and parses the command line arguments.
+    """Sets up argparse arguments and parses the command line arguments.
 
         Returns:
             A dict of command line arguments.
-    '''
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--config-file', dest='config_path',
@@ -223,13 +204,13 @@ def get_command_line_args():
 
     parser.add_argument('--default-chunk-size', type=int,
         dest='default_chunk_size', metavar='SIZE_MB',
-        help='''Chunk size in MB for storage consumers if sizes for all
-                consumers are not specificed in --config-file.''')
+        help="""Chunk size in MB for storage consumers if sizes for all
+                consumers are not specificed in --config-file.""")
 
     parser.add_argument('--default-file-size', type=int,
         dest='default_file_size', metavar='SIZE_MB',
-        help='''File size in MB for storage consumers if sizes for all
-                consumers are not specificed in --config-file.''')
+        help="""File size in MB for storage consumers if sizes for all
+                consumers are not specificed in --config-file.""")
 
     parser.add_argument('-t', '--runtime', metavar= 'SECS', type=int,
         help='Time (sec) that client should run for.')

@@ -1,4 +1,4 @@
-'''Contains the definition for the StorageHeartbeat class.'''
+"""Contains the definition for the StorageHeartbeat class."""
 
 import time
 import cPickle as pickle
@@ -10,7 +10,7 @@ from Queue import Empty
 from shared import Message, configure_logging
 
 class StorageHeartbeat(object):
-    '''The StorageHeartbeat runs on the parent process of the client instance.
+    """The StorageHeartbeat runs on the parent process of the client instance.
        It acts as the master to the StorageConsumer and StorageMonitor
        instances.
 
@@ -21,7 +21,7 @@ class StorageHeartbeat(object):
        All status tasks received on the queue are pickled and sent to the server
        over a socket.  HEARTBEAT and KILL responses are aggregated, pickled,
        and sent to the server over the same socket.
-    '''
+    """
 
     #These constants could optionally be converted to configuration parameters
 
@@ -34,7 +34,7 @@ class StorageHeartbeat(object):
 
     def __init__(self, consumers, monitor, report_in, runtime,
                  poll_period, client_socket, log_level='INFO'):
-        '''Initializes a StorageHeartbeat with:
+        """Initializes a StorageHeartbeat with:
 
             Args:
                 consumers: An iterable of ProcessData objects for the
@@ -48,7 +48,7 @@ class StorageHeartbeat(object):
                 client_socket: A connected socket to the server.
                 log_level: A string matching the logging level.
                     (e.g. DEBUG, INFO, WARNING)
-        '''
+        """
         self.consumers = consumers
         self.monitor = monitor
         self.report_in = report_in
@@ -58,34 +58,34 @@ class StorageHeartbeat(object):
         self.log = configure_logging(log_level, 'Client')
 
     def _log_message_received(self, message):
-        '''A helper method to log a message received from a child process.
+        """A helper method to log a message received from a child process.
 
             Args:
                 message: A Message object received from a child process.
-        '''
+        """
         self.log.info('Message received from {}_{}: {}'.format(message.name,
                                                                message.id,
                                                                repr(message)))
 
     def _log_message_sent(self, message, process):
-        '''A helper method to log a message sent to a child process.
+        """A helper method to log a message sent to a child process.
 
             Args:
                 message: A Message object sent to a child process.
                 process: The Process to which the message was sent.
-        '''
+        """
         self.log.info('Message sent to {}_{}: {}'.format(process.name,
                                                          process.id,
                                                          repr(message)))
 
     def _send_message_to_server(self, message):
-        '''Pickle a message and send it to the server.
+        """Pickle a message and send it to the server.
 
            Sets the kill Event should the socket no longer be open.
 
             Args:
                 message: A Message object to be sent to the server.
-        '''
+        """
         # pickle the message into a string
         # Not secure but sufficient for our purposes
         ps_message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
@@ -101,7 +101,7 @@ class StorageHeartbeat(object):
             self.kill.set()
 
     def _poll_processes(self, message, timeout, response_type, wait_to_send=None):
-        '''This method sends a message to all children processes and collects
+        """This method sends a message to all children processes and collects
            the response messages from each.  Processes that fail to respond are
            aggregated as a list of tuple of (name, id). The process responses
            and failed response list are sent to the server.
@@ -115,7 +115,7 @@ class StorageHeartbeat(object):
                 response_type: The Message.type expected in the responses.
                 wait_to_send: And event signal that we wait on before sending
                     the message to the server.
-        '''
+        """
         #Send the message to the monitor and all consumers
         self.monitor.pipe.send(message)
         self._log_message_sent(message, self.monitor.process)
@@ -171,11 +171,11 @@ class StorageHeartbeat(object):
         self.log.info('Message sent to server: {}'.format(repr(message)))
 
     def _do_heartbeat(self):
-        '''Periodically send heartbeat requests to child processes and forward
+        """Periodically send heartbeat requests to child processes and forward
            results to the server until:
             1. Runtime is elapsed
             2. Kill event gets set (socket was closed)
-        '''
+        """
         heartbeat_stop = time.time() + self.runtime
 
         # Stop running if the kill event is set or if we've been running
@@ -200,11 +200,11 @@ class StorageHeartbeat(object):
                 time.sleep(sleep_time)
 
     def _kill_all(self):
-        '''Send kill message to all child processes.
+        """Send kill message to all child processes.
 
            This run after the client runtime has elapsed or the kill event
            has been set.
-        '''
+        """
         message = Message(name='Heartbeat',
                           id=0,
                           date_time=None,
@@ -220,14 +220,14 @@ class StorageHeartbeat(object):
                              wait_to_send=self.queue_empty)
 
     def _process_message_queue(self):
-        '''Process messages in the report_in queue.
+        """Process messages in the report_in queue.
 
            The self.kill Event signals this thread to process the
            queue until empty and then exit.
 
            This method runs as a separate background thread while
            _do_heartbeat and _kill_all run in the foreground.
-        '''
+        """
         while not self.kill.is_set():
             try:
                 message = self.report_in.get(timeout=2)
@@ -251,7 +251,7 @@ class StorageHeartbeat(object):
         self.queue_empty.set()
 
     def run(self):
-        '''This is the main entry point for StorageHeartbeat.'''
+        """This is the main entry point for StorageHeartbeat."""
         self.kill = Event() # This signals _process_message_queue to finish up
 
         # Event used to delay sending STOP message to server until all messages

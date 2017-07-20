@@ -1,8 +1,8 @@
 #! /usr/bin/env python2
 
-'''Main entry point for running a Server directly via
+"""Main entry point for running a Server directly via
     python -m server
-'''
+"""
 
 import sys
 import os.path
@@ -20,7 +20,7 @@ from .config import ServerConfig
 
 
 def main(config):
-    '''The main entry point when running a Server instance.'''
+    """The main entry point when running a Server instance."""
 
     # This server will bind to server_address and listen for connection
     # requests.  Each connection handler will be given its own process.
@@ -33,7 +33,7 @@ def main(config):
     server.cleanup()
 
 def update_config(config, args):
-    '''Override ServerConfig with command line arguments when provided.
+    """Override ServerConfig with command line arguments when provided.
 
         Args:
             config: The ServerConfig instance.
@@ -41,7 +41,7 @@ def update_config(config, args):
 
         Returns:
             Modifed ServerConfig overridden by command line arguments.
-    '''
+    """
     config.host = args.host if args.host is not None else config.host
 
     config.port = args.port if args.port is not None else config.port
@@ -50,14 +50,14 @@ def update_config(config, args):
         else config.log_level
 
 def get_config(args):
-    '''Imports a ServerConfig instance from the server configuration file.
+    """Imports a ServerConfig instance from the server configuration file.
 
         Args:
             args: dict of command line arguments.
 
         Returns:
             A ServerConfig instance.
-    '''
+    """
     if not os.path.exists(args.config_path) or \
         not os.path.isfile(args.config_path):
         sys.exit('Path {} doesn\'t exist'.format(args.config_path))
@@ -71,22 +71,22 @@ def get_config(args):
     return config
 
 def get_command_line_args():
-    '''Sets up argparse arguments and parses the command line arguments.
+    """Sets up argparse arguments and parses the command line arguments.
 
         Returns:
             A dict of command line arguments.
-    '''
+    """
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--config-file', dest='config_path',
         default='server_config.yaml',
         help='File path of yaml configuration file for server.')
 
-    parser.add_argument('-h', '--host',
-        help='Listening interface for the server.') 
+    parser.add_argument('-s', '--host',
+        help='Listening interface for the server.')
 
     parser.add_argument('-p', '--port', type=int,
-        help='Listening port for the server')
+        help='Listening port for the server.')
 
     parser.add_argument('-l', '--log-level', choices=['INFO', 'DEBUG'],
         dest='log_level',

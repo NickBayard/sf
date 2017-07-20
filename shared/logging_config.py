@@ -1,10 +1,10 @@
-'''Contains the shared defintion of the configure_logging function.'''
+"""Contains the shared defintion of the configure_logging function."""
 
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
 def configure_logging(log_level, name):
-    '''Creates a logging instance with a TimedRotatingFileHandler and
+    """Creates a logging instance with a TimedRotatingFileHandler and
        a StreamHandler.
 
         Args:
@@ -14,7 +14,7 @@ def configure_logging(log_level, name):
 
         Returns:
             A configured logging logger instance.
-    '''
+    """
     logger = logging.getLogger(name)
 
     log_level = getattr(logging, log_level.upper(), None)

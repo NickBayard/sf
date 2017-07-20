@@ -1,4 +1,4 @@
-'''Contains the definition for the StorageMonitor class.'''
+"""Contains the definition for the StorageMonitor class."""
 
 import os
 import time
@@ -12,17 +12,17 @@ from shared import Message
 
 
 class MonitorData(object):
-    '''MonitorData is a container for processes that are monitored by
+    """MonitorData is a container for processes that are monitored by
        StorageMonitor.  It is designed to be pickled and send as a
        Message payload.
-    '''
+    """
 
     def __init__(self, process):
-        '''Initializes a MonitorData with:
+        """Initializes a MonitorData with:
 
             Args:
                 process: A multiprocessing.Process instance
-        '''
+        """
         self.id = process.id
         self.pid = process.pid
         self.name = process.name
@@ -33,11 +33,11 @@ class MonitorData(object):
         self.etime = None
 
     def __repr__(self):
-        '''Provides a repr() implementation for MonitorData.
+        """Provides a repr() implementation for MonitorData.
 
             Returns:
                 A repr string for MonitorData.
-        '''
+        """
         repr_string = '{}('.format(self.__class__.__name__)
         repr_string += 'id={}, '.format(self.id)
         repr_string += 'pid={}, '.format(self.pid)
@@ -49,7 +49,7 @@ class MonitorData(object):
         return repr_string
 
 class StorageMonitor(StorageObject):
-    '''The StorageMonitor periodically polls some status information
+    """The StorageMonitor periodically polls some status information
        from one or more StorageConsumer instances on this client.
 
        StorageMonitor inherits from StorageObject, which makes it a
@@ -59,10 +59,10 @@ class StorageMonitor(StorageObject):
 
        KILL messages received on the "heartbeat" pipe force the process
        to stop. These messages are polled once per second.
-    '''
+    """
 
     def __init__(self, processes, id, heartbeat, report, poll_period, name=None):
-        '''Initializes a StorageMonitor with:
+        """Initializes a StorageMonitor with:
 
             Args:
                 processes: An interable of multiprocessing.Process objects
@@ -72,7 +72,7 @@ class StorageMonitor(StorageObject):
                 poll_period: Interval (s) on which StorageMonitor should poll
                     the StorageConsumers for their status information.
                 name: A string name of the process.
-        '''
+        """
         super(StorageMonitor, self).__init__(id=id,
                                              heartbeat=heartbeat,
                                              report=report,
@@ -81,14 +81,14 @@ class StorageMonitor(StorageObject):
         self.poll_period = poll_period
 
     def _monitor_error(self, process):
-        '''Called whenever the monitor incounters an error retrieving the
+        """Called whenever the monitor incounters an error retrieving the
            status of a consumer process. Sends a message to StorageHeartbeat
            indcating the error.
 
             Args:
                 process: The MonitorData object of the process that caused
                     the error.
-        '''
+        """
         self.report.put(Message(name=self.name,
                                 id=self.id,
                                 date_time=datetime.now(),
@@ -96,16 +96,11 @@ class StorageMonitor(StorageObject):
                                 payload=process))
 
     def run(self):
-        '''Overridden from StorageObject and multiprocessing.Process
+        """Overridden from StorageObject and multiprocessing.Process
 
-           run() contains the task that will be run in this process.'''
+           run() contains the task that will be run in this process."""
 
-        # Report that this monitor has started running
-        self.report.put(Message(name=self.name,
-                                id=self.id,
-                                date_time=datetime.now(),
-                                type='START',
-                                payload=None))
+        self.send_stop_message()
 
         # Stop when we get a KILL message from StorageHeartbeat
         while self.check_heartbeat():
@@ -168,9 +163,4 @@ class StorageMonitor(StorageObject):
                 if not alive:
                     break
 
-        # Report that monitor has stopped running
-        self.heartbeat.send(Message(name=self.name,
-                                    id=self.id,
-                                    date_time=datetime.now(),
-                                    type='STOP',
-                                    payload=None))
+        self.send_stop_message()

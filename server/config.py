@@ -1,4 +1,4 @@
-'''Enter module docstring here'''
+"""Enter module docstring here"""
 
 import yaml
 

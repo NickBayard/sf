@@ -1,4 +1,4 @@
-'''Contains the definition for the Handler class.'''
+"""Contains the definition for the Handler class."""
 
 import re
 import cPickle as pickle
@@ -6,14 +6,14 @@ from SocketServer import BaseRequestHandler
 
 
 class Handler(BaseRequestHandler):
-    '''Handler acts as a request handler process for Server.
+    """Handler acts as a request handler process for Server.
 
        It inherits from BaseRequestHandler so handle() gets called
        in BaseRequestHandler.__init__().
-    '''
+    """
 
     def __init__(self, request, client_address, server, message_queue):
-        '''Initializes a Handler with:
+        """Initializes a Handler with:
 
             Args:
                 request: A socket request object.
@@ -21,15 +21,15 @@ class Handler(BaseRequestHandler):
                 server: The Server instance.
                 message_queue: A managed queue for loading Messages
                     received from on the socket.
-        '''
+        """
         self.log = server.log
         self.message_queue = message_queue
         BaseRequestHandler.__init__(self, request, client_address, server)
 
     def handle(self):
-        '''Extracts Messages from the request socket and sends them to
+        """Extracts Messages from the request socket and sends them to
            the processing thread via message_queue.
-        '''
+        """
         # This is the prefix attached to all Messages from the client.
         # The \d contains the length of the message.
         re_obj = re.compile(':::(\d+):::')
@@ -75,11 +75,11 @@ class Handler(BaseRequestHandler):
                 # else need to collect more data
 
     def _send_message(self, message):
-        '''Unpickle pickle string received over the socket and send the Message
+        """Unpickle pickle string received over the socket and send the Message
            to the processing thread via message_queue.
 
             Args:
                 message: A pickled Message string.
-        '''
+        """
         message = pickle.loads(message)
         self.message_queue.put(message)

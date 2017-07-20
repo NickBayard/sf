@@ -1,10 +1,10 @@
-'''Contains the shared definition of the init_dir_path'''
+"""Contains the shared definition of the init_dir_path"""
 
 import os
 import os.path
 
 def init_dir_path(path):
-    '''Returns an existing absolute directory with files stripped
+    """Returns an existing absolute directory with files stripped
        if necessary.
 
         Args:
@@ -13,7 +13,7 @@ def init_dir_path(path):
 
         Returns:
             A directory path string.
-    '''
+    """
     # Expand home directory '~'
     path = os.path.expanduser(path)
 

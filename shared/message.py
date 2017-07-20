@@ -1,12 +1,12 @@
-'''Contains the shared definition for the Message class.'''
+"""Contains the shared definition for the Message class."""
 
 
 class Message(object):
-    '''The Message class is used as the vessel for objects sent between
-       process and threads over sockets, pipes and queues.'''
+    """The Message class is used as the vessel for objects sent between
+       process and threads over sockets, pipes and queues."""
 
     def __init__(self, name, date_time, type, payload=None, id=0):
-        '''Initializes a Message with:
+        """Initializes a Message with:
 
             Args:
                 name: A string name of the sender.
@@ -16,7 +16,7 @@ class Message(object):
                       NOTE: An enum would be less error prone, but would
                       require either installing enum34.
                 payload: The message contents, which vary by type.
-        '''
+        """
         self.name = name
         self.id = id
         self.date_time = date_time
@@ -24,11 +24,11 @@ class Message(object):
         self.payload = payload
 
     def __repr__(self):
-        '''Provides a repr() implementation for Message.
+        """Provides a repr() implementation for Message.
 
             Returns:
                 A repr string for Message.
-        '''
+        """
         repr_string = '{}('.format(self.__class__.__name__)
         repr_string += 'date_time={}, '.format(self.date_time)
         repr_string += 'name={}, '.format(self.name)
