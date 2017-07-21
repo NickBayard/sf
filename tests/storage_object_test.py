@@ -20,9 +20,7 @@ class TestObject(unittest.TestCase):
         assertEqual(message.name, 'TestObject')
         assertIsNone(message.payload)
 
-    def test_start_message(self):
-        self.object.send_start_message()
-
+    def start_message_check(self):
         assertFalse(self.queue.empty())
 
         try:
@@ -33,15 +31,21 @@ class TestObject(unittest.TestCase):
         assertEqual(message.type, 'START')
         self.common_message_check(message)
 
-    def test_stop_message(self):
-        self.object.send_stop_message()
-
+    def stop_message_check(self):
         assertTrue(self.hb_master.poll())
 
         message = self.hb_master.recv()
 
         assertEqual(message.type, 'STOP')
         self.common_message_check(message)
+
+    def test_start_message(self):
+        self.object.send_start_message()
+        self.start_message_check()
+
+    def test_stop_message(self):
+        self.object.send_stop_message()
+        self.stop_message_check()
 
     def test_check_heartbeat_none(self):
         assertTrue(self.object.check_heartbeat())
@@ -55,7 +59,7 @@ class TestObject(unittest.TestCase):
         self.hb_master.send(message)
         assertFalse(self.object.check_heartbeat())
 
-    def test_check_heartbeat_response(self):
+    def send_heartbeat(self):
         message = Message(name='Heartbeat',
                             id=0,
                             date_time=None,
@@ -63,14 +67,20 @@ class TestObject(unittest.TestCase):
                             payload=None)
         self.hb_master.send(message)
 
+    def check_heartbeat(self, response):
+        assertEqual(response.type, 'HEARTBEAT')
+        self.common_message_check(response)
+
+    def test_check_heartbeat_response(self):
+        self.send_heartbeat()
+
         assertTrue(self.object.check_heartbeat())
 
         assertTrue(self.hb_master.poll())
 
         response = self.hb_master.recv()
 
-        assertEqual(response.type, 'HEARTBEAT')
-        self.common_message_check(response)
+        self.check_heartbeat(response)
 
     def test_run(self):
         assertRaises(NotImplementedError, self.object.run())

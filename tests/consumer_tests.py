@@ -2,6 +2,7 @@ import os.path
 import time
 import multiprocessing
 import subprocess
+import threading
 from Queue import Queue, Empty
 
 from client import StorageConsumer
@@ -29,6 +30,7 @@ class TestConsumer(TestObject):
         self.filepath = os.path.join(self.consumer.path, 'tempfile')
 
     def tearDown(self):
+        # TODO remove all files in self.consumer.path
         if (os.path.exists(self.filepath)):
             os.remove(self.filepath)
 
@@ -105,5 +107,32 @@ class TestConsumer(TestObject):
         assertEqual(message.payload.size, self.FILE_SIZE * self.MEGABYTE)
         assertEqual(message.payload.chunk, self.CHUNK_SIZE * self.MEGABYTE)
 
+    def run_thread(self):
+        self.start_message_check()
+
+        self.send_heartbeat()
+
+        # wait until we get something back
+        start = time.time()
+        while not self.hb_master.poll()
+            time.sleep(0.5)
+            if time.time() - start >= 3:
+                self.fail('Heartbeat response failed.')
+
+        response = self.hb_master.recv()
+
+        self.check_heartbeat(response)
+
+        time.sleep(3)  # Give consumer time to write some files
+
+        self.stop_message_check()
+
+        # Check for files in self.consumer.path that are of correct size
+
     def test_run(self):
-        pass  # TODO
+        t = threading.Thread(target=self.run_thread)
+        t.start()
+
+        self.consumer.run()
+
+        t.join()
