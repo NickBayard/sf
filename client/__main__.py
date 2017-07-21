@@ -77,11 +77,7 @@ def main(config):
                         pipe=master)
 
         # We need to test the chunk_size/runtime limits before starting up
-        temp_filepath = os.path.join(consumer.process.path, 'temp')
-        if not StorageConsumer.test_runtime(runtime=config.runtime,
-                                            path=temp_filepath,
-                                            chunk_size=consumer.process.chunk_size,
-                                            file_size=consumer.process.file_size):
+        if not consumer.process.test_runtime(config.runtime):
             format_message = 'Runtime {} and chunk size {} for Consumer {}'.format(
                 config.runtime, consumer.process.chunk_size, id)
             sys.exit('{} not sufficient for 2x rollover.'.format(format_message))

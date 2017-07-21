@@ -69,8 +69,7 @@ class StorageConsumer(StorageObject):
         # Validate the directory path
         self.path = init_dir_path(path)
 
-    @staticmethod
-    def test_chunk_speed(chunk_size, filepath):
+    def test_chunk_speed(filepath):
         """Test the time to write a single chunk.
 
             Args:
@@ -80,13 +79,10 @@ class StorageConsumer(StorageObject):
             Returns:
                 Time (s) it took to write a chunk-sized file to path.
         """
-        if os.path.exists(filepath):
-            os.remove(filepath)
-
         start = time.time()
 
         with open(filepath, 'wb') as f:
-            f.write(os.urandom(chunk_size))
+            f.write(os.urandom(self.chunk_size))
 
         elapsed = time.time() - start
 
@@ -95,24 +91,20 @@ class StorageConsumer(StorageObject):
 
         return elapsed
 
-    @staticmethod
-    def test_runtime(runtime, path, chunk_size, file_size):
+    def test_runtime(runtime):
         """Tests the number of files that can rollover in a given runtime by
         timing the write for a single chunk.
 
             Args:
                 runtime: Time (s) that StorageConsumer would be run for.
-                path: An expanded file path that should be created for
-                    the test.
-                chunk_size: Size of the chunk that should be written to path.
-                file_size: StorageConsumer would write this file size. File
-                    write time is extrapolated from chunk write time.
             Returns:
                 True if we can rollover at least 2 times else False
         """
-        chunk_time = StorageConsumer.test_chunk_speed(chunk_size, path)
+        path = os.path.join(self.path, 'temp')
 
-        num_chunks_per_file = math.ceil(file_size / chunk_size)
+        chunk_time = self.test_chunk_speed(path)
+
+        num_chunks_per_file = math.ceil(self.file_size / self.chunk_size)
 
         time_per_file = chunk_time * num_chunks_per_file
 
@@ -131,17 +123,15 @@ class StorageConsumer(StorageObject):
         # write in order to get an accurate size measurement.
         subprocess.call(['touch', filepath])
 
-    @staticmethod
-    def append_chunk(filepath, chunk):
+    def append_chunk(self, filepath):
         with open(filepath, 'ab') as f:
             # Construct a byte string of chunk_size and then
             # write to file
-            f.write(os.urandom(chunk))
+            f.write(os.urandom(self.chunk_size))
 
-    @staticmethod
-    def write_file_in_chunks(filepath, file_size, chunk_size):
-        while os.path.getsize(filepath) < file_size:
-            StorageConsumer.append_chunk(filepath, chunk_size)
+    def write_file_in_chunks(filepath):
+        while os.path.getsize(filepath) < self.file_size:
+            StorageConsumer.append_chunk(filepath, self.chunk_size)
 
     def send_rollover_message(self, filepath):
         payload = RolloverPayload(path=filepath,
