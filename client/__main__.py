@@ -21,23 +21,7 @@ from .config import ClientConfig
 from consumer import StorageConsumer
 from monitor import StorageMonitor
 from heartbeat import StorageHeartbeat
-from shared import init_dir_path
-
-
-class ProcessData(object):
-    """A container housing a multiprocessing.Process and a
-       multiprocessing.Pipe.
-    """
-
-    def __init__(self, process, pipe):
-        """Initializes a ProcessData instance.
-
-            Args:
-                process: A multiprocessing.Process
-                pipe: A multiprocessing.Pipe for communicating with process
-        """
-        self.process = process
-        self.pipe = pipe
+from shared import ProcessData, init_dir_path
 
 
 def main(config):

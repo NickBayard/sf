@@ -33,7 +33,7 @@ class StorageHeartbeat(object):
     HEARTBEAT_KILL_TIMEOUT = 10
 
     def __init__(self, consumers, monitor, report_in, runtime,
-                 poll_period, client_socket, log_level='INFO'):
+                 poll_period, client_socket, log_level=None'):
         """Initializes a StorageHeartbeat with:
 
             Args:
@@ -55,7 +55,8 @@ class StorageHeartbeat(object):
         self.runtime = runtime
         self.poll_period = poll_period
         self.socket = client_socket
-        self.log = configure_logging(log_level, 'Client')
+        self.log = configure_logging(log_level, 'Client') \
+            if log_level is not None else None
 
     def _log_message_received(self, message):
         """A helper method to log a message received from a child process.
