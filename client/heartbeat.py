@@ -149,7 +149,8 @@ class StorageHeartbeat(object):
         if len(responses) < len(self.consumers) + 1:
             # We must have timed out.  Check for missed responses
             responding_processes = set([(proc.name, proc.id) for proc in responses])
-            processes = set([(consumer.proc.name, consumer.proc.id) for consumer in consumers])
+            processes = set([(consumer.process.name, consumer.process.id) for
+                             consumer in self.consumers])
             processes.add((self.monitor.process.name, self.monitor.process.id))
 
             # Items in the processes set but not in the responding_processes set

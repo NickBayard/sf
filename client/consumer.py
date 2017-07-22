@@ -69,7 +69,7 @@ class StorageConsumer(StorageObject):
         # Validate the directory path
         self.path = init_dir_path(path)
 
-    def test_chunk_speed(filepath):
+    def test_chunk_speed(self, filepath):
         """Test the time to write a single chunk.
 
             Args:
@@ -91,7 +91,7 @@ class StorageConsumer(StorageObject):
 
         return elapsed
 
-    def test_runtime(runtime):
+    def test_runtime(self, runtime):
         """Tests the number of files that can rollover in a given runtime by
         timing the write for a single chunk.
 
@@ -129,9 +129,9 @@ class StorageConsumer(StorageObject):
             # write to file
             f.write(os.urandom(self.chunk_size))
 
-    def write_file_in_chunks(filepath):
+    def write_file_in_chunks(self, filepath):
         while os.path.getsize(filepath) < self.file_size:
-            StorageConsumer.append_chunk(filepath, self.chunk_size)
+            self.append_chunk(filepath)
 
     def send_rollover_message(self, filepath):
         payload = RolloverPayload(path=filepath,
@@ -160,7 +160,7 @@ class StorageConsumer(StorageObject):
 
             StorageConsumer.create_new_file(filepath)
 
-            StorageConsumer.write_file_in_chunks(filepath, self.file_size, self.chunk_size)
+            self.write_file_in_chunks(filepath)
 
             self.send_rollover_message(filepath)
 
