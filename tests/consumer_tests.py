@@ -1,3 +1,4 @@
+import os
 import os.path
 import time
 import multiprocessing
@@ -23,14 +24,13 @@ class TestConsumer(TestObject):
                                         chunk_size=self.CHUNK_SIZE,
                                         file_size=self.FILE_SIZE,
                                         heartbeat=self.hb_slave,
-                                        repprt=self.queue,
+                                        report=self.queue,
                                         path='./temp/',
                                         name='TestConsumer')
 
         self.filepath = os.path.join(self.consumer.path, 'tempfile')
 
     def tearDown(self):
-        # TODO remove all files in self.consumer.path
         if (os.path.exists(self.filepath)):
             os.remove(self.filepath)
 
@@ -127,7 +127,9 @@ class TestConsumer(TestObject):
 
         self.stop_message_check()
 
-        # Check for files in self.consumer.path that are of correct size
+        for file in os.listdir(self.consumer.path):
+            assertTrue(file.startswith('TestConsumer_0_file_')
+            assertEqual(os.path.getsize(file), self.FILE_SIZE * self.MEGABYTE)
 
     def test_run(self):
         t = threading.Thread(target=self.run_thread)

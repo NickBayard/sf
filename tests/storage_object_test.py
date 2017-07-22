@@ -13,11 +13,11 @@ class TestObject(unittest.TestCase):
                                     report=self.queue,
                                     name='TestObject')
 
-    def common_message_check(self, message):
+    def common_message_check(self, message, name):
         assertIsInstance(message, Message)
 
         assertEqual(message.id, 0)
-        assertEqual(message.name, 'TestObject')
+        assertEqual(message.name, name)
         assertIsNone(message.payload)
 
     def start_message_check(self):
@@ -29,7 +29,7 @@ class TestObject(unittest.TestCase):
             self.fail(msg='Queue get_nowait() failed')
 
         assertEqual(message.type, 'START')
-        self.common_message_check(message)
+        self.common_message_check(message, 'TestObject')
 
     def stop_message_check(self):
         assertTrue(self.hb_master.poll())
@@ -37,7 +37,7 @@ class TestObject(unittest.TestCase):
         message = self.hb_master.recv()
 
         assertEqual(message.type, 'STOP')
-        self.common_message_check(message)
+        self.common_message_check(message, 'TestObject')
 
     def test_start_message(self):
         self.object.send_start_message()
@@ -69,7 +69,7 @@ class TestObject(unittest.TestCase):
 
     def check_heartbeat(self, response):
         assertEqual(response.type, 'HEARTBEAT')
-        self.common_message_check(response)
+        self.common_message_check(response, 'TestObject')
 
     def test_check_heartbeat_response(self):
         self.send_heartbeat()

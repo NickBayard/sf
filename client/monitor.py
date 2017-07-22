@@ -48,6 +48,11 @@ class MonitorData(object):
         repr_string += ')'
         return repr_string
 
+
+class MonitorResponseError(Exception):
+    pass
+
+
 class StorageMonitor(StorageObject):
     """The StorageMonitor periodically polls some status information
        from one or more StorageConsumer instances on this client.
@@ -95,12 +100,32 @@ class StorageMonitor(StorageObject):
                                 type='MONITOR_ERROR',
                                 payload=process))
 
+    def validate_monitor_response(self, response):
+        # Check the first line of the response for 'CPU' and 'MEM'
+        # to ensure that ps returned valid output
+        match = re.search('CPU.+MEM', response[0])
+        if match is None:
+            raise MonitorResponseError
+
+        response_items = response[1].split()
+        if not len(response_items) == 3:
+            raise MonitorResponseError
+
+        return response_items
+
+    def send_monitor_message(self, process):
+        self.report.put(Message(name=self.name,
+                                id=self.id,
+                                date_time=datetime.now(),
+                                type='MONITOR',
+                                payload=process))
+
     def run(self):
         """Overridden from StorageObject and multiprocessing.Process
 
            run() contains the task that will be run in this process."""
 
-        self.send_stop_message()
+        self.send_start_message()
 
         # Stop when we get a KILL message from StorageHeartbeat
         while self.check_heartbeat():
@@ -115,27 +140,15 @@ class StorageMonitor(StorageObject):
                     self._monitor_error(process)
                     break
 
-                # Check the first line of the response for 'CPU' and 'MEM'
-                # to ensure that ps returned valid output
-                match = re.search('CPU.+MEM', response[0])
-                if match is None:
+                try:
+                    process.cpu, process.mem, process.etime = self.validate_monitor_response(response)
+                except MonitorResponseError:
                     self._monitor_error(process)
                     break
-
-                response_items = response[1].split()
-                if not len(response_items) == 3:
-                    self._monitor_error(process)
-                    break
-
-                process.cpu, process.mem, process.etime = response_items
 
                 # Send the status information for this consumer to the
                 # StorageHeartbeat
-                self.report.put(Message(name=self.name,
-                                        id=self.id,
-                                        date_time=datetime.now(),
-                                        type='MONITOR',
-                                        payload=process))
+                self.send_monitor_message(process)
 
             # Subtract the elapsed time from the poll period for more accurate
             # monitor polling intervals
