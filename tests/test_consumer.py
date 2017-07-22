@@ -1,12 +1,10 @@
-from __future__ import print_function
 import os
 import os.path
 import time
 import multiprocessing
 import subprocess
-import threading
 import math
-from Queue import Queue, Empty
+from Queue import Queue
 
 from client import StorageConsumer
 from shared import Message
@@ -98,11 +96,9 @@ class TestConsumer(TestObject):
 
         self.assertFalse(self.queue.empty())
 
-        try:
-            message = self.queue.get_nowait()
-        except Empty:
-            self.fail(msg='Queue get_nowait() failed')
+        message = self.get_message_from_queue()
 
+        self.assertIsNotNone(message)
         self.assertIsInstance(message, Message)
 
         self.assertEqual(message.type, 'ROLLOVER')
@@ -116,9 +112,6 @@ class TestConsumer(TestObject):
         self.start_message_check()
 
         self.send_heartbeat()
-
-        # wait until we get something back
-        start = time.time()
 
         # Give HB client 3 seconds to respond
         self.assertTrue(self.hb_master.poll(3))
@@ -151,9 +144,4 @@ class TestConsumer(TestObject):
             self.assertEqual(os.path.getsize(path), self.FILE_SIZE * self.MEGABYTE)
 
     def test_run(self):
-        t = threading.Thread(target=self.run_thread)
-        t.start()
-
-        self.dut.run()
-
-        t.join()
+        self.run_test()

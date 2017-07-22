@@ -1,5 +1,6 @@
 import unittest
 import multiprocessing
+import threading
 
 from Queue import Queue, Empty
 
@@ -25,12 +26,20 @@ class TestObject(unittest.TestCase):
         self.assertEqual(message.name, self.NAME)
         self.assertIsNone(message.payload)
 
-    def start_message_check(self):
+    def get_message_from_queue(self):
+        message = None
+
         try:
             message = self.queue.get(block=True, timeout=3)
         except Empty:
             self.fail(msg='Queue get() failed empty')
 
+        return message
+
+    def start_message_check(self):
+        message = self.get_message_from_queue()
+
+        self.assertIsNotNone(message)
         self.assertEqual(message.type, 'START')
         self.common_message_check(message)
 
@@ -87,6 +96,14 @@ class TestObject(unittest.TestCase):
         response = self.hb_master.recv()
 
         self.check_heartbeat(response)
+
+    def run_test(self):
+        t = threading.Thread(target=self.run_thread)
+        t.start()
+
+        self.dut.run()
+
+        t.join()
 
     def test_run(self):
         self.assertRaises(NotImplementedError, self.dut.run)

@@ -101,6 +101,10 @@ class StorageMonitor(StorageObject):
                                 payload=process))
 
     def validate_monitor_response(self, response):
+        # We should have a header and at least one entry
+        if not len(response) >= 2:
+            raise MonitorResponseError
+
         # Check the first line of the response for 'CPU' and 'MEM'
         # to ensure that ps returned valid output
         match = re.search('CPU.+MEM', response[0])
