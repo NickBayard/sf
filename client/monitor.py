@@ -136,7 +136,7 @@ class StorageMonitor(StorageObject):
                 command = ['ps', '-p', str(process.pid), '-o', 'pcpu,pmem,etimes']
                 try:
                     response = subprocess.check_output(command).split(b'\n')
-                except CalledProcessError:
+                except subprocess.CalledProcessError:
                     self._monitor_error(process)
                     break
 

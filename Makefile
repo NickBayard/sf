@@ -10,11 +10,12 @@ client: env
 server: env
 	python -m server
 
-test: env
-	python -m test
+tests: env
+	python -m tests
 
 clean:
 	rm -rf storage/
+	rm -rf temp/
 	rm -f server/*.pyc
 	rm -f client/*.pyc
 	rm -f shared/*.pyc
@@ -22,4 +23,4 @@ clean:
 	rm -f *.log
 	rm -rf __pycache__
 
-.PHONY: install env client server test clean
+.PHONY: install env client server tests clean

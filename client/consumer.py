@@ -1,5 +1,5 @@
 """Contains the definition for the StorageConsumer class."""
-
+from __future__ import print_function
 import os
 import os.path
 import time
@@ -108,6 +108,8 @@ class StorageConsumer(StorageObject):
 
         time_per_file = chunk_time * num_chunks_per_file
 
+        # We use ceil because consumer will finish writing the last file
+        # after the end of runtime (i.e. KILL) message is received
         num_files_in_runtime = math.ceil(runtime / time_per_file)
 
         return num_files_in_runtime >= 2.0

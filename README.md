@@ -1,3 +1,6 @@
 TODO 
     Better server report
-    Tests
+    unit Tests
+    system test
+    document tests
+    readme
