@@ -1,16 +1,15 @@
 import unittest
 import multiprocessing
+import threading
 import cPickle as pickle
 
 from mock import MagicMock, patch, call
 from Queue import Queue, Empty
 
 from client import StorageHeartbeat
-from shared import ProcessData
+from shared import ProcessData, Message
 
 class TestHeartbeat(object):
-
-    SOCKET_PORT = 1000
 
     class MockProcess(object):
         def __init__(self, id, name):
@@ -108,6 +107,59 @@ class TestHeartbeat(object):
         self.dut._kill_all()
         self.assertTrue(self.dut._poll_processes.called)
 
-        call_list = self.dut._poll_processes.call_args_list
+    def test_heartbeat(self):
+        self.dut._poll_processes = MagicMock()
+        self.dut._do_heartbeat()
+        self.assertEqual(self.dut._poll_processes.call_count, 3)
 
+    def handle_process_pipes(self, message, response_type):
+        # Check slave pipes for message
+        assertTrue(self.monitor_slave.poll(3))
+        if self.monitor_slave.poll():
+            assertEqual(self.monitor_slave.recv(), message)
 
+        assertTrue(self.consumer_slave.poll(3))
+        if self.consumer_slave.poll():
+            assertEqual(self.consumer_slave.recv(), message)
+
+        # Send responses on slaves to heartbeat
+        response = Message(name=None,
+                           date_time=None,
+                           type=response_type)
+        self.monitor_slave.send(response)
+        self.consumer_slave.send(response)
+
+        # check server socket for heartbeat aggregate packet
+        size, received = self.get_message_from_queue()
+
+        self.assertIsNotNone(received)
+        if received is None:
+            return
+
+        self.assertIsNotNone(size)
+        if size is None:
+            return
+
+        self.assertIsInstance(received, Message)
+
+        self.assertEqual(message.type, response_type)
+        self.assertEqual(message.id, 0)
+        self.assertEqual(message.name, 'Heartbeat')
+
+        self.assertIsInstance(message.payload(0), list)
+        self.assertEqual(len(message.payload(0)), 2)
+
+        self.assertIsInstance(message.payload(1), set)
+        self.assertEqual(len(message.payload(1)), 0)
+
+    def test_poll_processes(self):
+        message='abcdefg'
+        response_type = 'TEST'
+        t = threading.Thread(target=self.handle_process_pipes, args=(message, response_type))
+        t.start()
+
+        self.dut._poll_processes(message=message,
+                                 timeout=2,
+                                 response_type=response_type)
+
+        t.join()

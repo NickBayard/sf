@@ -1,16 +1,13 @@
 install:
 	pip install -r requirements.txt
 
-env:
-	. env/bin/activate
-
-client: env
+client:
 	python -m client
 
-server: env
+server:
 	python -m server
 
-tests: env
+tests:
 	python -m tests
 
 clean:
@@ -23,4 +20,4 @@ clean:
 	rm -f *.log
 	rm -rf __pycache__
 
-.PHONY: install env client server tests clean
+.PHONY: install client server tests clean

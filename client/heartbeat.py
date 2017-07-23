@@ -33,7 +33,7 @@ class StorageHeartbeat(object):
     HEARTBEAT_KILL_TIMEOUT = 10
 
     def __init__(self, consumers, monitor, report_in, runtime,
-                 poll_period, client_socket, log_level=None'):
+                 poll_period, client_socket, log_level=None):
         """Initializes a StorageHeartbeat with:
 
             Args:

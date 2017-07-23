@@ -4,6 +4,7 @@ import time
 import multiprocessing
 import subprocess
 import math
+import shutil
 from Queue import Queue
 
 from client import StorageConsumer
@@ -32,8 +33,8 @@ class TestConsumer(TestObject):
         self.filepath = os.path.join(self.dut.path, 'tempfile')
 
     def tearDown(self):
-        if (os.path.exists(self.filepath)):
-            os.remove(self.filepath)
+        if os.path.exists(self.dut.path):
+            shutil.rmtree(self.dut.path)
 
     def test_chunk_write_timing(self):
         start = time.time()
