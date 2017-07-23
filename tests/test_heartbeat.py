@@ -163,3 +163,47 @@ class TestHeartbeat(object):
                                  response_type=response_type)
 
         t.join()
+
+    def handle_message_queue(self):
+        # Add some dummy messages to the queue
+        message = ['dummy1', 'dummy2', 'dummy3']
+        for message in messages:
+            self.queue.put(message)
+
+        time.sleep(1)
+        # Send kill event
+        self.dut.kill.set()
+
+        time.sleep(1)
+
+        assertTrue(self.dut.queue_empty.is_set())
+        # _process_message_queue is done
+
+        # Check that dummy messages are in server socket queue
+        for message in messages:
+            size, received = self.get_message_from_queue()
+
+            self.assertIsNotNone(received)
+            if received is None:
+                return
+
+            self.assertIsNotNone(size)
+            if size is None:
+                return
+
+            fail_size = 'Message length {} Received length {}'.format(len(message),
+                                                                    size)
+            self.assertEqual(size, len(message), msg=fail_size)
+
+            fail_contents = 'Message: ({}) Received: ({})'.format(message, received)
+            self.assertEqual(message, received, msg=fail_contents)
+
+    def test_process_message_queue(self):
+        t = threading.Thread(target=self.handle_message_queue)
+        t.start()
+
+        self.dut._process_message_queue()
+
+        t.join()
+
+
