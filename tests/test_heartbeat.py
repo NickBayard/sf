@@ -37,7 +37,6 @@ class TestHeartbeat(object):
             self.queue.put((size, message))
 
         def close(self):
-            #TODO process queue
             pass
 
     def setUp(self):

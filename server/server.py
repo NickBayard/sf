@@ -183,7 +183,7 @@ class Server(MultiprocessMixin, TCPServer):
 
     def watch_queue(self, client_address):
         """Thread that processes Messages in the queue from the Handler.
-           Also shutsdown the socket, Handler process and generates the
+           Also shuts down the socket and Handler process and generates the
            Server report when all clients are done.
 
             Args:
@@ -352,5 +352,3 @@ class Server(MultiprocessMixin, TCPServer):
                     file.write(repr(message) + '\n')
 
                 file.write('\n')
-
-            file.write('EOF\n')
