@@ -13,6 +13,9 @@ from server import Handler
 class TestHandler(unittest.TestCase):
 
     class MyTCPServer(TCPServer):
+
+        allow_reuse_address = True
+
         def __init__(self, server_address, RequestHandlerClass, queue):
             # TCPServer/BaseServer are not new style classes and cannot use super()
             TCPServer.__init__(self,
@@ -35,24 +38,31 @@ class TestHandler(unittest.TestCase):
             self.RequestHandlerClass(request, client_address, self, self.queue)
 
 
-    def setUp(self):
-        self.queue = Queue()
+    @classmethod
+    def setUpClass(cls):
+        """ Set up the server and client sockets at the class level.
+            Doing this at the test level may render a socket unable to
+            be reused.
+        """
+        cls.queue = Queue()
 
         address = ('127.0.0.1', 10000)
 
         # Start the server
-        self.server = self.MyTCPServer(address, Handler, self.queue)
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
-        self.server_thread.start()
+        cls.server = cls.MyTCPServer(address, Handler, cls.queue)
+        cls.server_thread = threading.Thread(target=cls.server.serve_forever)
+        cls.server_thread.start()
 
         # Start a client connection
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect(address)
+        cls.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        cls.socket.connect(address)
 
-    def tearDown(self):
-        self.socket.close()
-        self.server.shutdown()
-        self.server_thread.join()
+    @classmethod
+    def tearDownClass(cls):
+        """ Tear down the server and client sockets at the class level."""
+        cls.socket.close()
+        cls.server.shutdown()
+        cls.server_thread.join()
 
     def send_message_to_server(self, message):
         message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
@@ -72,3 +82,26 @@ class TestHandler(unittest.TestCase):
 
         fail_receive = 'Message: ({}) Received: ({})'.format(message, received)
         self.assertEqual(message, received, msg=fail_receive)
+
+    def test_handler_fragmented(self):
+        # Send some messages to the handler
+        payload = 'abcdefg'
+        pickled = pickle.dumps(payload, pickle.HIGHEST_PROTOCOL)
+        prefixed = ':::{}:::{}'.format(len(pickled), pickled)
+
+        messages = [prefixed[:-4], prefixed[-4:]]
+
+        for message in messages:
+            try:
+                self.socket.sendall(message)
+            except socket.error:
+                self.fail('Socket closed')
+
+        # Check the messages on the queue
+        try:
+            received = self.queue.get(block=True, timeout=2)
+        except Empty:
+            self.fail('Queue empty')
+
+        fail_receive = 'Message: ({}) Received: ({})'.format(payload, received)
+        self.assertEqual(payload, received, msg=fail_receive)
