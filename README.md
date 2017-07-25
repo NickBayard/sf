@@ -85,7 +85,7 @@ The client consists of three processes.
 
 ### Communication
 
-All messaging used on this application use a generic ```Message``` class to house their communications.  Heartbeat, kill, and done messages within the client are passed over a ```multiprocessing.Pipe``` between the ```StorageHeartbeat``` class and the child processes.  But status messages from the ```StorageConsumer``` and ```StorageMonitor``` processes use a single queue that is consumed by the ```StorageHeartbeat``` class.
+All messaging used on this application use a generic ```Message``` class to house the communications.  *Heartbeat*, *kill*, and *done* messages within the client are passed over a ```multiprocessing.Pipe``` between the ```StorageHeartbeat``` class and the child processes.  But status messages from the ```StorageConsumer``` and ```StorageMonitor``` processes use a single queue that is consumed by the ```StorageHeartbeat``` class.
 
 Commnication from the client to the server is done over a socket.  This allows clients to reside on their own machines. Though the payload sent over the socket is still the generic ```Message``` type, they are serialized with ```pickle```, which is sufficient for a naive application such as this.  But for an unsecure network, one would want to use an encrypted protocol, or, at the very least, use some sort of client authentication before processing messages.
 
