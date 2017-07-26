@@ -345,7 +345,7 @@ class Server(MultiprocessMixin, TCPServer):
 
         return True
 
-    def _report_runtime(self, file, start, stop):
+    def _report_runtime(self, file, starts, stops):
 
         class StartStop(object):
             def __init__(self, start=None, stop=None):
@@ -354,12 +354,12 @@ class Server(MultiprocessMixin, TCPServer):
 
         file.write('  Runtime:\n')
         # Verify that we received a START and STOP message
-        if start is not None and stop is not None:
+        if starts is not None and stops is not None:
             # We should get a start and stop message from each client process
             # Build a dictionary containing start and stop messages from
             # each child process
             messages = {}
-            for s in start:
+            for s in starts:
                 process = self.ID(name=s.name, id=s.id)
 
                 if process in messages:
@@ -369,11 +369,11 @@ class Server(MultiprocessMixin, TCPServer):
                     messages[process] = StartStop(start=s)
 
             # There should only be 1 stop message
-            if len(stop) > 1:
+            if len(stops) > 1:
                 file.write('    ERROR: Multiple STOP messages detected ')
             else:
-                stop_received = stop[0].payload[0]
-                stop_missing = stop[0].payload[1]
+                stop_received = stops[0].payload[0]
+                stop_missing = stops[0].payload[1]
 
                 # Add START messages
                 for s in stop_received:
@@ -418,10 +418,10 @@ class Server(MultiprocessMixin, TCPServer):
                     runtime = message.stop.date_time - message.start.date_time
                     file.write('      Runime: {}\n\n'.format(runtime))
 
-        elif start is None:
+        elif starts is None:
             # Didn't get a start message
             file.write('    ERROR: START messages not received.\n')
-        elif stop is None:
+        elif stops is None:
             # Didn't get a stop message
             file.write('    ERROR: STOP messages not received.\n')
 
@@ -466,8 +466,8 @@ class Server(MultiprocessMixin, TCPServer):
 
                 pdb.set_trace()
                 self._report_runtime(file=file,
-                                     start=client.messages.get('START'),
-                                     stop=client.messages.get('STOP'))
+                                     starts=client.messages.get('START'),
+                                     stops=client.messages.get('STOP'))
 
                 self._report_heartbeat(file=file,
                                        messages=client.messages.get('HEARTBEAT'))
