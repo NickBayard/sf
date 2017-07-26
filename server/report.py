@@ -6,7 +6,18 @@ from shared import init_dir_path
 
 
 class Report(object):
+    """ The Report class encapsulates the ability to generate a text report
+        from the set of messages received by the server from the clients.
+    """
+
     def __init__(self, path, clients):
+        """Initialize a Report with:
+
+           Args:
+            path: A directory path where the report should be placed.
+            clients: A dict of ClientData values which houses a list
+                of messages received from each client.
+        """
         self.path = init_dir_path(path)
         self.clients = clients
 
@@ -19,7 +30,6 @@ class Report(object):
             for address, client in self.clients.iteritems():
                 file.write('Client @ {}:{}\n\n'.format(address[0], address[1]))
 
-                pdb.set_trace()
                 self._report_runtime(file=file,
                                      starts=client.messages.get('START'),
                                      stops=client.messages.get('STOP'))
@@ -36,6 +46,15 @@ class Report(object):
                 file.write('\n')
 
     def _report_runtime(self, file, starts, stops):
+        """Generate report text about the runtime of the client.
+           This information is extracted from the set of start and
+           stop messages.
+
+           Args:
+            file: An open file handle for outputting text to.
+            starts: A list of start messages for a particular client.
+            stops: A list of stop messages for a particular client.
+        """
 
         class StartStop(object):
             def __init__(self, start=None, stop=None):
@@ -116,6 +135,13 @@ class Report(object):
             file.write('    ERROR: STOP messages not received.\n')
 
     def _report_heartbeat(self, file, messages):
+        """Generate report text about the heartbeat messages of the
+           client.
+
+           Args:
+            file: An open file handle for outputting text to.
+            messages: A list of heartbeat messages for a particular client.
+        """
         # HEARTBEAT messages are aggregated
         # Let's regroup them by child process
         heartbeat_messages = {}
@@ -140,6 +166,13 @@ class Report(object):
                 file.write('      {}\n'.format(heartbeat))
 
     def _report_rollover(self, file, messages):
+        """Generate report text about the rollover messages of the
+           client.
+
+           Args:
+            file: An open file handle for outputting text to.
+            messages: A list of rollover messages for a particular client.
+        """
         # ROLLOVER messages are not aggregated.
         # Group them by child process
         rollover_messages = {}
@@ -159,6 +192,13 @@ class Report(object):
                                                            rollover.payload.path))
 
     def _report_monitor(self, file, messages):
+        """Generate report text about the monitor messages of the
+           client.
+
+           Args:
+            file: An open file handle for outputting text to.
+            messages: A list of monitor messages for a particular client.
+        """
         # MONITOR messages are not aggregated.
         # Group them by child process
         monitor_messages = {}
