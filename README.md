@@ -3,8 +3,6 @@
 ## TODO
     
 1.  Better server report
-2.  Unit Tests
-3.  Document Tests
 
 ## General
 

@@ -1,4 +1,5 @@
-import os
+"""Contains the unittest class and methods that test the Handler class."""
+
 import unittest
 import socket
 import threading
@@ -11,18 +12,39 @@ from server import Handler
 
 
 class TestHandler(unittest.TestCase):
+    """The TestHandler contains unittests that are used for testing the Handler
+       class.
+    """
 
     class MyTCPServer(TCPServer):
+        """This acts as a simple socket server for the Handler class to hook into.
+           It allows tests to inject fake socket connection requests and verify
+           that the handler has correctly decoded the packets.
+        """
 
         allow_reuse_address = True
 
         def __init__(self, server_address, RequestHandlerClass, queue):
+            """Initialize a MyTCPServer with:
+
+               Args:
+                server_address:  Atuple containing the server ip and port
+                    that the server should bind/listen to.
+                RequestHandlerClasss: This will be the Handler class that
+                    we want to test.
+                queue: A queue for the Handler to place extracted messages
+                    into.
+            """
             # TCPServer/BaseServer are not new style classes and cannot use super()
             TCPServer.__init__(self,
                             server_address=server_address,
                             RequestHandlerClass=RequestHandlerClass)
 
+            # Handler will place extracted messages into this queue for
+            # processing later.
             self.queue = queue
+
+            # Turn off logging in Handler
             self.log = None
 
         def finish_request(self, request, client_address):
@@ -35,6 +57,8 @@ class TestHandler(unittest.TestCase):
                     request: A socket request object.
                     client_address: A tuple containing the client ip/port.
             """
+            # RequestHandler class is also given a reference to the server
+            # as well as a queue for processing messages.
             self.RequestHandlerClass(request, client_address, self, self.queue)
 
 
@@ -65,6 +89,15 @@ class TestHandler(unittest.TestCase):
         cls.server_thread.join()
 
     def send_message_to_server(self, message):
+        """Method that encodes and sends a message to the server. Test
+           classes use this method to reduce duplicate code.
+
+           Args:
+            message: The content that should be sent to the server.
+
+           Raises:
+            socket.error if sending data over a socket fails.
+        """
         message = pickle.dumps(message, pickle.HIGHEST_PROTOCOL)
         message = ':::{}:::{}'.format(len(message), message)
         try:
@@ -73,7 +106,7 @@ class TestHandler(unittest.TestCase):
             self.fail('Socket closed')
 
     def test_handler_simple(self):
-        # Send some messages to the handler
+        """ Test a sending a simple message to the handler for extraction. """
         message = 'abcdefg'
         self.send_message_to_server(message)
 
@@ -84,7 +117,9 @@ class TestHandler(unittest.TestCase):
         self.assertEqual(message, received, msg=fail_receive)
 
     def test_handler_fragmented(self):
-        # Send some messages to the handler
+        """ Test sending a fragmented message to the server. """ 
+        # We can't use send_message_to_server here so that we can split it
+        # into two chunks
         payload = 'abcdefg'
         pickled = pickle.dumps(payload, pickle.HIGHEST_PROTOCOL)
         prefixed = ':::{}:::{}'.format(len(pickled), pickled)

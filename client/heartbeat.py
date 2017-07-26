@@ -9,6 +9,7 @@ from Queue import Empty
 
 from shared import Message, configure_logging
 
+
 class StorageHeartbeat(object):
     """The StorageHeartbeat runs on the parent process of the client instance.
        It acts as the master to the StorageConsumer and StorageMonitor
