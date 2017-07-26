@@ -1,5 +1,4 @@
 import unittest
-import socket
 
 from mock import MagicMock
 from multiprocessing import Event
@@ -20,8 +19,6 @@ class TestServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ Set up a Server instance to test before all tests are run.
-            Since SocketServer sets up its own socket connection, we must
-            also create a client socket connection for sending messages to the server.
         """
         address = ('127.0.0.1', 10001)
         cls.dut = Server(log_level='INFO',
@@ -30,16 +27,6 @@ class TestServer(unittest.TestCase):
                          report_path='./temp/')
 
         cls.dut.log = MagicMock()  # Turn off logging
-
-        #cls.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #cls.socket.connect(('127.0.0.1', 10000))
-
-    @classmethod
-    def tearDownClass(cls):
-        """ Close the server and client sockets after all tests are done. """
-        #cls.dut.shutdown()
-        #cls.socket.close()
-        pass
 
     def tearDown(self):
         self.dut.clients.clear()
