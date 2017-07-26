@@ -35,7 +35,6 @@ class Report(object):
 
                 file.write('\n')
 
-
     def _report_runtime(self, file, starts, stops):
 
         class StartStop(object):
@@ -141,8 +140,41 @@ class Report(object):
                 file.write('      {}\n'.format(heartbeat))
 
     def _report_rollover(self, file, messages):
-        pass
+        # ROLLOVER messages are not aggregated.
+        # Group them by child process
+        rollover_messages = {}
+
+        for message in messages:
+            process = ID(name=message.name, id=message.id)
+            rollover_messages.setdefault(process, []).append(message)
+
+        file.write('\n')
+        file.write('  Rollovers:\n')
+        for process, rollovers in rollover_messages.iteritems():
+            file.write('    {}_{}:\n'.format(process.name, process.id))
+            for rollover in rollovers:
+                file.write('      {}: {}/{} @ {}\n'.format(rollover.date_time,
+                                                           rollover.payload.chunk,
+                                                           rollover.payload.size
+                                                           rollover.payload.path))
 
     def _report_monitor(self, file, messages):
-        pass
+        # MONITOR messages are not aggregated.
+        # Group them by child process
+        monitor_messages = {}
 
+        for message in messages:
+            process = ID(name=message.name, id=message.id)
+            monitor_messages.setdefault(process, []).append(message)
+
+        file.write('\n')
+        file.write('  Process Status:\n')
+        for process, monitors in monitor_messages.iteritems():
+            file.write('    {}_{}:\n'.format(process.name, process.id))
+            for status in monitors:
+                file.write('      {}: {}_{} '.format(status.date_time,
+                                                     status.payload.name,
+                                                     status.payload.id))
+                file.write('{}% cpu  {}% mem  {}s runtime \n'.format(status.payload.cpu,
+                                                                     status.payload.mem,
+                                                                     status.payload.etime))

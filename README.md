@@ -1,9 +1,5 @@
 # Solidfire/NetApp Programming Exercise
 
-## TODO
-    
-1.  Better server report
-
 ## General
 
 The included application contains 3 modules:
