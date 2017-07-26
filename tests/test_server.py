@@ -29,7 +29,7 @@ class TestServer(unittest.TestCase):
                          RequestHandlerClass=Handler,
                          report_path='./temp/')
 
-        cls.dut.log.info = MagicMock()  # Turn off logging
+        cls.dut.log = MagicMock()  # Turn off logging
 
         #cls.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #cls.socket.connect(('127.0.0.1', 10000))
