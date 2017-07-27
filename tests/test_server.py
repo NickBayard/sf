@@ -12,7 +12,7 @@ class TestServer(unittest.TestCase):
     class MockClient(object):
 
         def __init__(self, done=False):
-            self.messages = []
+            self.messages = {}
             self.kill = Event()
             self.done = done
 
@@ -56,7 +56,8 @@ class TestServer(unittest.TestCase):
         self.assertEqual(self.dut.message_dispatch['START'].call_count, 1)
         self.assertEqual(self.dut.log.info.call_count, 1)
         self.assertEqual(len(client.messages), 1)
-        self.assertIs(client.messages[0], message)
+        self.assertEqual(len(client.messages['START']), 1)
+        self.assertIs(client.messages['START'][0], message)
 
         # Restore previously mocked methods
         self.dut.message_dispatch['START'] = _handle_start
