@@ -4,7 +4,7 @@ host_port: 10000  # This must match server config
 
 # Storage Consumer Config
 storage_path: './storage'  # Location to save storage consuming files
-storage_count: 1  # Number of storage consumer processes to launch
+storage_count: 3  # Number of storage consumer processes to launch
 default_chunk_size: 10  # MB
 default_file_size: 100  # MB
 # If the size of the chunk_sizes or file_sizes lists are less than the storage
@@ -20,4 +20,4 @@ monitor_poll_period: 10  # Seconds
 #Heartbeat Config
 heartbeat_poll_period: 5 # Seconds
 runtime: 10  # Seconds
-log_level: 'DEBUG'  #'INFO'
+log_level: 'INFO'  #'DEBUG'

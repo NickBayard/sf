@@ -57,7 +57,7 @@ class StorageObject(multiprocessing.Process):
 
             if message.type == 'HEARTBEAT':
                 self.heartbeat.send(Message(name=self.name,
-                                            id=0,
+                                            id=self.id,
                                             date_time=datetime.now(),
                                             type='HEARTBEAT',
                                             payload=None))
