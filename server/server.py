@@ -6,8 +6,6 @@ import threading
 import multiprocessing
 
 from Queue import Queue, Empty
-from datetime import datetime
-from collections import namedtuple
 
 from report import Report
 from shared import configure_logging
@@ -146,9 +144,6 @@ class Server(MultiprocessMixin, TCPServer):
         clients: A dict with client address tuples as keys and ClientData
             as values.
     """
-
-    # This namedtuple is used when processing the messages in the report
-    ID = namedtuple('ID', 'name id')
 
     allow_reuse_address = True
 

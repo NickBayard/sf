@@ -19,5 +19,6 @@ clean:
 	rm -f tests/*.pyc
 	rm -f *.log
 	rm -rf __pycache__
+	rm -f Server_Report_*.log
 
 .PHONY: install client server tests clean

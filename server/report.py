@@ -1,6 +1,10 @@
 """Contains the definitions for the Report class"""
 
 import os.path
+import math
+
+from datetime import datetime
+from collections import namedtuple
 
 from shared import init_dir_path
 
@@ -9,6 +13,9 @@ class Report(object):
     """ The Report class encapsulates the ability to generate a text report
         from the set of messages received by the server from the clients.
     """
+
+    # This namedtuple is used when processing the messages in the report
+    ID = namedtuple('ID', 'name id')
 
     def __init__(self, path, clients):
         """Initialize a Report with:
@@ -109,7 +116,7 @@ class Report(object):
                         file.write('for {}_{}\n'.format(process.name, process.id))
 
             # Iterate through the messages and print the start/stop/runtimes
-            for process, message in messages:
+            for process, message in messages.iteritems():
                 if message.stop is None:
                     # If a START is present and a STOP is not, then skip it, we've
                     # already written an error.
@@ -125,7 +132,7 @@ class Report(object):
 
                 if message.start is not None and message.stop is not None:
                     runtime = message.stop.date_time - message.start.date_time
-                    file.write('      Runime: {}\n\n'.format(runtime))
+                    file.write('      Runtime: {}\n'.format(runtime))
 
         elif starts is None:
             # Didn't get a start message
@@ -148,12 +155,12 @@ class Report(object):
 
         for message in messages:
             for child_process in message.payload[0]:
-                process = ID(name=child_process.name, id=child_process.id)
+                process = self.ID(name=child_process.name, id=child_process.id)
                 heartbeat_messages.setdefault(process, []).append(child_process.date_time)
 
             # Append error string for missing heartbeat
             for name, id in message.payload[1]:
-                process = ID(name=name, id=id)
+                process = self.ID(name=name, id=id)
                 heartbeat_messages.setdefault(process, []).append('ERROR: Missing heartbeat')
 
         file.write('\n')
@@ -173,12 +180,13 @@ class Report(object):
             file: An open file handle for outputting text to.
             messages: A list of rollover messages for a particular client.
         """
+        MEGABYTE = 1000000
         # ROLLOVER messages are not aggregated.
         # Group them by child process
         rollover_messages = {}
 
         for message in messages:
-            process = ID(name=message.name, id=message.id)
+            process = self.ID(name=message.name, id=message.id)
             rollover_messages.setdefault(process, []).append(message)
 
         file.write('\n')
@@ -186,10 +194,13 @@ class Report(object):
         for process, rollovers in rollover_messages.iteritems():
             file.write('    {}_{}:\n'.format(process.name, process.id))
             for rollover in rollovers:
-                file.write('      {}: {}/{} @ {}\n'.format(rollover.date_time,
-                                                           rollover.payload.chunk,
-                                                           rollover.payload.size
-                                                           rollover.payload.path))
+                # TODO reformat chunk and file size
+                chunk = math.floor(rollover.payload.chunk / MEGABYTE)
+                size = math.floor(rollover.payload.size / MEGABYTE)
+                file.write('      {}: {}MB chunk/{}MB @ {}\n'.format(rollover.date_time,
+                                                               chunk,
+                                                               size,
+                                                               rollover.payload.path))
 
     def _report_monitor(self, file, messages):
         """Generate report text about the monitor messages of the
@@ -204,7 +215,7 @@ class Report(object):
         monitor_messages = {}
 
         for message in messages:
-            process = ID(name=message.name, id=message.id)
+            process = self.ID(name=message.name, id=message.id)
             monitor_messages.setdefault(process, []).append(message)
 
         file.write('\n')
@@ -215,6 +226,6 @@ class Report(object):
                 file.write('      {}: {}_{} '.format(status.date_time,
                                                      status.payload.name,
                                                      status.payload.id))
-                file.write('{}% cpu  {}% mem  {}s runtime \n'.format(status.payload.cpu,
+                file.write('{}% cpu  {}% mem  {}s runtime\n'.format(status.payload.cpu,
                                                                      status.payload.mem,
                                                                      status.payload.etime))
